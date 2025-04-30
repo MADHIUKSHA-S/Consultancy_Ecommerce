@@ -79,28 +79,31 @@ const ShopContextProvider = (props) => {
   }, []);
   
 
-  // Add item to cart
   const addToCart = async (itemId) => {
+    if (!token) {
+      toast.info("Please login to add items to your cart.");
+      navigate("/login");
+      return;
+    }
+  
     setCartItems((prev) => {
       const newCart = { ...prev, [itemId]: (prev[itemId] || 0) + 1 };
-      localStorage.setItem("cartItems", JSON.stringify(newCart)); // Save to localStorage
+      localStorage.setItem("cartItems", JSON.stringify(newCart));
       return newCart;
     });
-
-    // Sync cart with backend if user is logged in
-    if (token) {
-      try {
-        await axios.post(backendUrl + "/api/cart/add", { itemId }, { headers: { Authorization: `Bearer ${token}` }
-        });
-        toast.success("Item added to cart!");
-      } catch (error) {
-        toast.error(error.response?.data?.message || "Failed to add to cart");
-      }
-    } else {
+  
+    try {
+      await axios.post(
+        backendUrl + "/api/cart/add",
+        { itemId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       toast.success("Item added to cart!");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to add to cart");
     }
   };
-
+  
   // Update quantity of an item in the cart
   const updateQuantity = async (itemId, quantity) => {
     if (quantity < 1) {
@@ -156,13 +159,40 @@ const ShopContextProvider = (props) => {
       localStorage.removeItem("token");
     }
   }, [token]);
-
+  const fetchUserCart = async () => {
+    if (!token) return;
+    try {
+      const response = await axios.get(backendUrl + "/api/cart/get", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.data.success) {
+        setCartItems(response.data.cart || {});
+        localStorage.setItem("cartItems", JSON.stringify(response.data.cart || {}));
+      }
+    } catch (error) {
+      toast.error("Failed to fetch updated cart");
+    }
+  };
+  
+  const logout = () => {
+    setToken(null);
+    setUserName(null);
+    setCartItems({}); 
+    localStorage.removeItem("token");
+    localStorage.removeItem("userName");
+    localStorage.removeItem("cartItems");
+    toast.success("Logged out successfully");
+    navigate('/login');
+  };
+  
   const value = {
     products,
+    logout,
     currency,
     delivery_fee,
     search,
     setSearch,
+    fetchUserCart,
     showSearch,
     setShowSearch,
     cartItems,

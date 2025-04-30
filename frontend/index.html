@@ -5,9 +5,36 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pbms</title>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script src='https://cdn.jotfor.ms/s/umd/latest/for-embedded-agent.js'></script>
+<script>
+  window.addEventListener("DOMContentLoaded", function() {
+    window.AgentInitializer.init({
+      agentRenderURL: "https://agent.jotform.com/01968218794873e39cc6a6add11e5da2ad99",
+      rootId: "JotformAgent-01968218794873e39cc6a6add11e5da2ad99",
+      formID: "01968218794873e39cc6a6add11e5da2ad99",
+      queryParams: ["skipWelcome=1", "maximizable=1"],
+      domain: "https://www.jotform.com",
+      isDraggable: false,
+      background: "linear-gradient(180deg, #0F53B4 0%, #0F53B4 100%)",
+      buttonBackgroundColor: "#246506",
+      buttonIconColor: "#FFFFFF",
+      variant: false,
+      customizations: {
+        "greeting": "Yes",
+        "greetingMessage": "Hi! How can I assist you?",
+        "pulse": "Yes",
+        "position": "right"
+      },
+      isVoice: false,
+    });
+  });
+</script>
   </body>
-</html>
+</html> 

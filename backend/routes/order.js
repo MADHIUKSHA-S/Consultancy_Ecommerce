@@ -3,6 +3,45 @@ import Order from '../models/orderModel.js';
 import authMiddleware from '../middleware/authMiddleware.js';
 import adminAuth from '../middleware/adminAuth.js';
 const router = express.Router();
+import Razorpay from 'razorpay';
+import crypto from 'crypto';
+import dotenv from 'dotenv';
+dotenv.config();
+
+// Razorpay instance initialization
+const razorpayInstance = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
+console.log('Razorpay Keys:', process.env.RAZORPAY_KEY_ID, process.env.RAZORPAY_KEY_SECRET);
+
+// POST /api/order/payment-success — Handle Razorpay payment success
+router.post('/payment-success', async (req, res) => {
+  try {
+    const { orderId, paymentDetails } = req.body;
+    const order = await Order.findById(orderId);
+    
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    const generatedSignature = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+      .update(`${paymentDetails.razorpay_order_id}|${paymentDetails.razorpay_payment_id}`)
+      .digest('hex');
+
+    if (generatedSignature === paymentDetails.razorpay_signature) {
+      order.status = 'Paid';
+      await order.save();
+
+      return res.status(200).json({ success: true, message: 'Payment verified and order updated.' });
+    }
+
+    return res.status(400).json({ success: false, message: 'Payment verification failed' });
+  } catch (error) {
+    console.error('Payment success error:', error);
+    res.status(500).json({ success: false, message: 'Failed to verify payment', error: error.message });
+  }
+});
 
 // GET /api/order/userOrders
 
@@ -57,21 +96,12 @@ router.get("/all-orders", adminAuth, async (req, res) => {
   }
 });
 
-
 // POST /api/order/place — Place a new order
-// In orderRoutes.js
-router.post('/place', async (req, res) => {
+router.post('/place', authMiddleware, async (req, res) => {
   try {
-    console.log("Order Request Body:", req.body); // This will log the full request body
-    
-    const { userId, items, amount, address, paymentMethod } = req.body;
-    console.log("Received items:", items); // Log the 'items' part specifically
-
-    // Check if productId exists
-    items.forEach(item => {
-      console.log('Product ID:', item.productId); // Check each productId
-    });
-
+    const { items, amount, address, paymentMethod } = req.body;
+    const userId = req.user.id;
+console.log(amount);
     const order = new Order({
       userId,
       items,
@@ -82,20 +112,45 @@ router.post('/place', async (req, res) => {
     });
 
     await order.save();
+
+    if (paymentMethod === 'razorpay') {
+      try {
+        const razorpayOrder = await razorpayInstance.orders.create({
+          amount: amount * 100, // in paise
+          currency: 'INR',
+          receipt: `order_${order._id}`,
+          payment_capture: 1,
+        });
+
+        order.razorpayOrderId = razorpayOrder.id;
+        await order.save();
+
+        return res.status(200).json({
+          success: true,
+          message: 'Order placed successfully!',
+          order: {
+            _id: order._id,
+            amount:amount,
+            razorpayOrderId: razorpayOrder.id,
+          },
+        });
+      } catch (razorpayError) {
+        console.error('Razorpay order creation error:', razorpayError);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to create Razorpay order',
+          error: razorpayError.message,
+        });
+      }
+    }
+
     res.status(200).json({ success: true, message: 'Order placed successfully!' });
   } catch (error) {
     console.error('Order placement error:', error);
     res.status(500).json({ success: false, message: 'Failed to place order', error: error.message });
   }
 });
-// router.get('/user-orders', async (req, res) => {
-//   try {
-//     const orders = await Order.find({ userId: req.user._id });
-//     res.json({ success: true, orders });
-//   } catch (error) {
-//     res.status(500).json({ success: false, message: 'Error fetching orders' });
-//   }
-// });
+
 
 // Example Express route
 router.put('/cancel/:orderId', authMiddleware, async (req, res) => {

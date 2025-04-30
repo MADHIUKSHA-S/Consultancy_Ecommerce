@@ -113,6 +113,49 @@ const loginAdmin = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+// Forgot Password - Change User Password
+const forgotPassword = async (req, res) => {
+  try {
+    const { email, newPassword } = req.body;
+
+    // Check if email and new password provided
+    if (!email || !newPassword) {
+      return res.status(400).json({ success: false, message: "All fields are required" });
+    }
+
+    // Validate email
+    if (!validator.isEmail(email)) {
+      return res.status(400).json({ success: false, message: "Invalid email" });
+    }
+
+    // Validate new password length
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 8 characters",
+      });
+    }
+
+    // Find user by email
+    const user = await userModel.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // Hash the new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Update user's password
+    user.password = hashedPassword;
+    await user.save();
+
+    res.status(200).json({ success: true, message: "Password updated successfully" });
+  } catch (error) {
+    console.error("Error while changing password:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
 
 
-export { loginUser, registerUser, loginAdmin };
+export { loginUser, registerUser, loginAdmin ,forgotPassword };

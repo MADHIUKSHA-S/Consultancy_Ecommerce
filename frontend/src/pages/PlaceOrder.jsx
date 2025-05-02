@@ -105,11 +105,7 @@ const PlaceOrder = () => {
             });
   
             toast.success('Order placed successfully!');
-            setCartItems(() => {
-              const cleared = {};
-              localStorage.setItem('cartItems', JSON.stringify(cleared));
-              return cleared;
-            });
+            
              // Clear localStorageawait fetchUserCart();
             fetchUserCart(); // Fetch updated cart data
            
@@ -139,11 +135,7 @@ const PlaceOrder = () => {
         
       } else if (response.data?.success && method === 'cod') {
         toast.success('Order placed successfully!');
-        setCartItems(() => {
-          const cleared = {};
-          localStorage.setItem('cartItems', JSON.stringify(cleared));
-          return cleared;
-        });
+        
          // Clear localStorage
 fetchUserCart(); // Fetch updated cart data
         navigate('/orders');

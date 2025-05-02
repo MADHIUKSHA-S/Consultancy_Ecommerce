@@ -166,13 +166,19 @@ const ShopContextProvider = (props) => {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.data.success) {
-        setCartItems(response.data.cart || {});
-        localStorage.setItem("cartItems", JSON.stringify(response.data.cart || {}));
+        setCartItems(response.data.cartData || {}); // <-- Fix here
+        localStorage.setItem("cartItems", JSON.stringify(response.data.cartData || {})); // <-- Fix here
       }
     } catch (error) {
       toast.error("Failed to fetch updated cart");
     }
   };
+  useEffect(() => {
+    if (token) {
+      fetchUserCart();
+    }
+  }, [token]);
+  
   
   const logout = () => {
     setToken(null);

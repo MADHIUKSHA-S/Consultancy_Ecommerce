@@ -10,18 +10,20 @@ const ProductItem = ({ id, image = [], name, price }) => {
   console.log('ProductItem Props:', { id, image, name, price });
 
   useEffect(() => {
-    // Check if the product is available in the context
-    if (products && products.length > 0) {
-      const foundProduct = products.find((item) => item._id === id); // Find the product by id from context
-      if (foundProduct) {
-        setMainImage(foundProduct.image[0] || 'https://placehold.co/500x500?text=No+Image');
+    if (image?.length > 0) {
+      setMainImage(image[0]); // Use passed image directly first
+    } else if (products?.length > 0) {
+      const foundProduct = products.find((item) => item._id === id);
+      if (foundProduct?.image?.length > 0) {
+        setMainImage(foundProduct.image[0]);
+      } else {
+        setMainImage('https://placehold.co/500x500?text=No+Image');
       }
-    } else if (image.length > 0) {
-      setMainImage(image[0]); // If no product in context, use the passed image prop
     } else {
-      setMainImage('https://placehold.co/500x500?text=No+Image'); // Default fallback image
+      setMainImage('https://placehold.co/500x500?text=No+Image');
     }
-  }, [id, image, products]); // Update if id or image or products change
+  }, [id, image, products]);
+  
 
   return (
     <Link

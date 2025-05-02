@@ -24,17 +24,25 @@ const orderSchema = new mongoose.Schema({
   address: {
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
-    email: { type: String, required: true },
+    email: { 
+      type: String, 
+      required: true, 
+      match: [/^\S+@\S+\.\S+$/, 'Please use a valid email address.'] 
+    },
     street: { type: String, required: true },
     city: { type: String, required: true },
     state: { type: String, required: true },
     zipcode: { type: String, required: true },
     country: { type: String, required: true },
-    phone: { type: String, required: true }
+    phone: {
+      type: String,
+      required: true,
+      match: [/^\+?\d{10,15}$/, 'Please enter a valid phone number.']
+    }
   },
   status: {
     type: String,
-    enum: ['Pending', 'Shipped', 'Delivered', 'Cancelled', 'Paid'], // Add whatever statuses you plan
+    enum: ['Pending', 'Shipped', 'Delivered', 'cancelled', 'Paid'], // Add whatever statuses you plan
     default: 'Pending',
   }
 ,  
@@ -42,7 +50,7 @@ const orderSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   }
-});
+}, { timestamps: true });
 
 const Order = mongoose.model('Order', orderSchema);
 

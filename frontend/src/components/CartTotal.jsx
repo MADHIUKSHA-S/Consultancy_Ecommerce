@@ -5,11 +5,14 @@ const CartTotal = ({ cartData, selectedItems }) => {
   const currency = "₹"; // You can replace with context or prop
 
   useEffect(() => {
-    const total = cartData
-      .filter((item) => selectedItems[item._id])
-      .reduce((sum, item) => sum + item.totalPrice, 0);
-    setSubtotal(total);
+    if (Array.isArray(cartData) && selectedItems) {
+      const total = cartData
+        .filter((item) => selectedItems[item._id])
+        .reduce((sum, item) => sum + item.totalPrice, 0);
+      setSubtotal(total);
+    }
   }, [cartData, selectedItems]);
+  
 
   const shipping = subtotal > 0 ? 10 : 0;
   const total = subtotal + shipping;

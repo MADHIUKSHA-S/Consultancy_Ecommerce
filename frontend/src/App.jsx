@@ -15,11 +15,12 @@ import SearchBar from './components/SearchBar';
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import ScrollToTop from './components/ScrollToTop';
-
+import { Toaster } from 'react-hot-toast';
 const App = () => {
   return (
     <div className="px-[1cm] w-full">
       <ToastContainer />
+      <Toaster position="top-right" />
       <NavBar />
       <SearchBar />
       <ScrollToTop />

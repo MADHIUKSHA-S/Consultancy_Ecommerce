@@ -3,7 +3,9 @@ import { ShopContext } from '../context/ShopContext';
 import Title from '../components/Title';
 import { assets } from '../assets/assets';
 import CartTotal from '../components/CartTotal';
-
+import { toast as toast1} from 'react-toastify';
+import { toast as toast2} from 'react-hot-toast';
+//import { toast as toast2} from 'react-hot-toast';
 const Cart = () => {
   const { products, currency, cartItems, updateQuantity, navigate, token } = useContext(ShopContext);
   const [cartData, setCartData] = useState([]);
@@ -75,22 +77,72 @@ const Cart = () => {
     const formatted = formatCartData(updatedCart);
     setCartData(formatted);
   };
-
   const removeItemFromCart = (itemId) => {
-    if (window.confirm('Remove this item from your cart?')) {
-      updateQuantity(itemId, 0);
-      const updatedCart = JSON.parse(localStorage.getItem('cartItems')) || {};
-      delete updatedCart[itemId];
-      localStorage.setItem('cartItems', JSON.stringify(updatedCart));
-      const formatted = formatCartData(updatedCart);
-      setCartData(formatted);
-      setSelectedItems((prev) => {
-        const newSelected = { ...prev };
-        delete newSelected[itemId];
-        return newSelected;
-      });
-    }
+    toast2.custom((t) => (
+      <div
+        style={{
+          background: 'white',
+          padding: '16px',
+          borderRadius: '8px',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px',
+          width: '260px',
+          border: '1px solid #f44336' // red outline
+        }}
+      >
+        <span>Are you sure you want to remove this item from your cart?</span>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+          <button
+            onClick={() => {
+              toast2.dismiss(t.id);
+              proceedRemoveItem(itemId);
+            }}
+            style={{
+              backgroundColor: '#dc3545',
+              color: 'white',
+              border: 'none',
+              padding: '6px 12px',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            Yes
+          </button>
+          <button
+            onClick={() => toast2.dismiss(t.id)}
+            style={{
+              backgroundColor: '#f0f0f0',
+              border: 'none',
+              padding: '6px 12px',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            No
+          </button>
+        </div>
+      </div>
+    ));
   };
+  
+  const proceedRemoveItem = (itemId) => {
+    updateQuantity(itemId, 0);
+    const updatedCart = JSON.parse(localStorage.getItem('cartItems')) || {};
+    delete updatedCart[itemId];
+    localStorage.setItem('cartItems', JSON.stringify(updatedCart));
+    const formatted = formatCartData(updatedCart);
+    setCartData(formatted);
+    setSelectedItems((prev) => {
+      const newSelected = { ...prev };
+      delete newSelected[itemId];
+      return newSelected;
+    });
+  
+    toast1.success('Item removed from cart');
+  };
+  
 
   const handleCheckboxChange = (itemId) => {
     setSelectedItems((prev) => ({

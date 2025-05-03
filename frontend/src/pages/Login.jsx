@@ -2,7 +2,7 @@ import { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { ShopContext } from "../context/ShopContext";
 import { FaEye, FaEyeSlash } from "react-icons/fa"; // Import eye icons
-
+import { toast } from 'react-toastify';
 const Login = () => {
   const [currentState, setCurrentState] = useState("Sign Up");
   const [name, setName] = useState("");
@@ -47,7 +47,7 @@ const Login = () => {
 
       if (response.ok) {
         if (forgotPasswordMode) {
-          alert("Password updated successfully. Please login.");
+          toast.success("Password updated successfully. Please login.");
           setForgotPasswordMode(false);
           setCurrentState("Login");
         } else if (currentState === "Login") {
@@ -60,11 +60,11 @@ const Login = () => {
           setCurrentState("Login");
         }
       } else {
-        alert(data.message || "Something went wrong");
+        toast.error(data.message || "Something went wrong");
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Network or server error");
+      toast.error("Network or server error");
     }
 
     setName("");

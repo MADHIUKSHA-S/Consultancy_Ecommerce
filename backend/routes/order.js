@@ -170,6 +170,34 @@ router.put('/cancel/:orderId', authMiddleware, async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+// adjust path as needed
+
+// DELETE /api/order/item/:orderId/:productId
+router.delete('/item/:orderId/:productId', authMiddleware, async (req, res) => {
+  const { orderId, productId } = req.params;
+
+  try {
+    const order = await Order.findById(orderId);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    // Filter out the item
+    order.items = order.items.filter(item => item.productId.toString() !== productId);
+    
+    // If all items are deleted, you can optionally delete the whole order
+    if (order.items.length === 0) {
+      await Order.findByIdAndDelete(orderId);
+      return res.json({ message: 'Item deleted. Order was empty and removed.' });
+    }
+
+    await order.save();
+    res.json({ message: 'Order item deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting item:', error);
+    res.status(500).json({ message: 'Failed to delete item' });
+  }
+});
+
+
 router.put('/update-status', adminAuth, async (req, res) => {
   const { orderId, status } = req.body;
 

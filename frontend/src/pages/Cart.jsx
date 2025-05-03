@@ -7,40 +7,37 @@ import CartTotal from '../components/CartTotal';
 const Cart = () => {
   const { products, currency, cartItems, updateQuantity, navigate, token } = useContext(ShopContext);
   const [cartData, setCartData] = useState([]);
-
+  const [selectedItems, setSelectedItems] = useState({});
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
-  // Format cart data by matching product details
   const formatCartData = (cartItems) => {
     return Object.entries(cartItems)
       .map(([itemId, value]) => {
         const quantity = typeof value === 'object' ? value.quantity : value;
         const product = products.find((p) => p._id === itemId);
         if (!product || quantity <= 0) return null;
-
         return {
           ...product,
           quantity,
           totalPrice: (product.price || 0) * quantity,
         };
       })
-      .filter(Boolean); // Remove null entries
+      .filter(Boolean);
   };
 
-  // Fetch cart data from the backend or local storage
   const fetchCartData = async () => {
     if (token) {
-      await fetchCartDataFromBackend(); // Fetch from backend if logged in
+      await fetchCartDataFromBackend();
     } else {
       const savedCart = JSON.parse(localStorage.getItem("cartItems")) || {};
       const formatted = formatCartData(savedCart);
-      console.log("Cart from localStorage:", savedCart);
-      console.log("Formatted cartData (guest):", formatted);
       setCartData(formatted);
+      const initialSelection = {};
+      formatted.forEach((item) => (initialSelection[item._id] = true));
+      setSelectedItems(initialSelection);
     }
   };
 
-  // Fetch cart data from the backend
   const fetchCartDataFromBackend = async () => {
     try {
       const response = await fetch(`${backendUrl}/api/cart/get`, {
@@ -53,32 +50,30 @@ const Cart = () => {
       if (data.success) {
         const cartItemsFromBackend = data.cartData || {};
         const formatted = formatCartData(cartItemsFromBackend);
-        console.log("Fetched cartData from backend:", cartItemsFromBackend);
-        console.log("Formatted cartData (user):", formatted);
         localStorage.setItem('cartItems', JSON.stringify(cartItemsFromBackend));
         setCartData(formatted);
-      } else {
-        console.error('Failed to load cart from backend');
+        const initialSelection = {};
+        formatted.forEach((item) => (initialSelection[item._id] = true));
+        setSelectedItems(initialSelection);
       }
     } catch (error) {
       console.error('Error fetching cart from backend:', error);
     }
   };
 
-  // Fetch cart data when component mounts or when the token or products change
   useEffect(() => {
     if (products && products.length > 0) {
       fetchCartData();
     }
   }, [token, products]);
 
-  // Update cart quantity and sync with localStorage
   const handleQuantityChange = (itemId, newQuantity) => {
     updateQuantity(itemId, newQuantity);
     const updatedCart = JSON.parse(localStorage.getItem('cartItems')) || {};
     updatedCart[itemId] = newQuantity;
     localStorage.setItem('cartItems', JSON.stringify(updatedCart));
-    setCartData(formatCartData(updatedCart));
+    const formatted = formatCartData(updatedCart);
+    setCartData(formatted);
   };
 
   const removeItemFromCart = (itemId) => {
@@ -87,8 +82,21 @@ const Cart = () => {
       const updatedCart = JSON.parse(localStorage.getItem('cartItems')) || {};
       delete updatedCart[itemId];
       localStorage.setItem('cartItems', JSON.stringify(updatedCart));
-      setCartData(formatCartData(updatedCart));
+      const formatted = formatCartData(updatedCart);
+      setCartData(formatted);
+      setSelectedItems((prev) => {
+        const newSelected = { ...prev };
+        delete newSelected[itemId];
+        return newSelected;
+      });
     }
+  };
+
+  const handleCheckboxChange = (itemId) => {
+    setSelectedItems((prev) => ({
+      ...prev,
+      [itemId]: !prev[itemId],
+    }));
   };
 
   if (!cartData || cartData.length === 0) {
@@ -123,11 +131,16 @@ const Cart = () => {
             className="py-6 border-b text-gray-700 grid grid-cols-12 items-center gap-4"
           >
             <div className="col-span-5 sm:col-span-4 flex items-start gap-4">
+              <input
+                type="checkbox"
+                checked={!!selectedItems[item._id]}
+                onChange={() => handleCheckboxChange(item._id)}
+                className="mt-1"
+              />
               <div>
                 <p className="text-sm sm:text-base font-medium">{item.name}</p>
                 <p className="mt-1 text-sm sm:text-base">
-                  {currency}
-                  {item.price.toFixed(2)}
+                  {currency}{item.price.toFixed(2)}
                 </p>
               </div>
             </div>
@@ -163,10 +176,8 @@ const Cart = () => {
                   </button>
                 </div>
               </div>
-
               <p className="w-20 text-right font-medium">
-                {currency}
-                {item.totalPrice.toFixed(2)}
+                {currency}{item.totalPrice.toFixed(2)}
               </p>
             </div>
 
@@ -188,11 +199,12 @@ const Cart = () => {
 
       <div className="flex justify-end mb-20">
         <div className="w-full sm:w-1/2 lg:w-1/3">
-          <CartTotal />
+          <CartTotal cartData={cartData} selectedItems={selectedItems} />
           <div className="w-full text-end mt-8">
             <button
               onClick={() => navigate("/place-order")}
               className="bg-black text-white text-sm px-8 py-3 hover:bg-gray-800 transition-colors"
+              disabled={Object.values(selectedItems).filter(Boolean).length === 0}
             >
               PROCEED TO CHECKOUT
             </button>

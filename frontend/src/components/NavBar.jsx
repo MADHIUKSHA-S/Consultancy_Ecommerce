@@ -12,13 +12,15 @@ const NavBar = () => {
     loadingToken,
     navigate,
     cartItems,
+   
     setShowSearch
   } = useContext(ShopContext);
 
   const location = useLocation();
 
-  // 🧠 Compute cart count reactively
-  const cartCount = Object.values(cartItems || {}).reduce((sum, qty) => sum + qty, 0);
+  const { getCartCount } = useContext(ShopContext);
+const cartCount = getCartCount();
+
 
   return (
     <div className="flex items-center justify-between py-5 font-medium">

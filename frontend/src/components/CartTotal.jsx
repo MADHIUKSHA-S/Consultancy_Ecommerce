@@ -1,34 +1,17 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { ShopContext } from '../context/ShopContext';
-import Title from './Title';
+import React, { useEffect, useState } from 'react';
 
-const CartTotal = () => {
-  const { cartItems, products, currency } = useContext(ShopContext);
+const CartTotal = ({ cartData, selectedItems }) => {
   const [subtotal, setSubtotal] = useState(0);
+  const currency = "₹"; // You can replace with context or prop
 
-  // Recompute subtotal whenever cartItems or products change
   useEffect(() => {
-    let total = 0;
-    for (const itemId in cartItems) {
-      // Ensure the cart item is structured correctly (either number or object with quantity)
-      let quantity = cartItems[itemId];
-      if (typeof quantity === 'object') {
-        quantity = quantity.quantity;
-      }
-
-      // Only add valid items with a quantity greater than 0
-      if (quantity > 0) {
-        const product = products.find(p => p._id === itemId);
-        if (product) {
-          total += (product.price || 0) * quantity;
-        }
-      }
-    }
+    const total = cartData
+      .filter((item) => selectedItems[item._id])
+      .reduce((sum, item) => sum + item.totalPrice, 0);
     setSubtotal(total);
-  }, [cartItems, products]); // Run this effect whenever cartItems or products change
+  }, [cartData, selectedItems]);
 
-  // Fixed shipping cost
-  const shipping = 10;
+  const shipping = subtotal > 0 ? 10 : 0;
   const total = subtotal + shipping;
 
   return (
@@ -52,3 +35,4 @@ const CartTotal = () => {
 };
 
 export default CartTotal;
+// This component calculates and displays the cart total, including subtotal, shipping, and total amount. It uses the cartData and selectedItems props to compute the values dynamically.

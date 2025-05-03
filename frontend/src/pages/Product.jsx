@@ -66,6 +66,15 @@ const Product = () => {
           >
             ADD TO CART
           </button>
+          <button 
+    onClick={() => {
+      handleAddToCart();
+      window.location.href = '/place-order'; // or use navigate('/place-order') with useNavigate
+    }} 
+    className="bg-orange-600 text-white px-6 py-3 text-sm hover:bg-orange-700"
+  >
+    PLACE ORDER
+  </button>
           <hr className="mt-8 sm:w-4/5" />
           <div className="text-sm text-gray-500 mt-5 flex flex-col gap-1">
             <p>100% Original product.</p>

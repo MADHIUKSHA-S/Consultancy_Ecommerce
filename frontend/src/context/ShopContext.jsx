@@ -9,7 +9,8 @@ const ShopContextProvider = (props) => {
   const currency = "₹";
   const delivery_fee = 10;
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
-
+  const [cartData, setCartData] = useState([]);
+  const [selectedItems, setSelectedItems] = useState({});
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
 
@@ -203,6 +204,8 @@ const ShopContextProvider = (props) => {
     setShowSearch,
     cartItems,
     setCartItems,
+    cartData, setCartData,
+      selectedItems, setSelectedItems,
     addToCart,
     getCartCount,
     updateQuantity,

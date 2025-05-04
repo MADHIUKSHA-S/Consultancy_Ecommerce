@@ -254,7 +254,12 @@ const Cart = () => {
           <CartTotal cartData={cartData} selectedItems={selectedItems} />
           <div className="w-full text-end mt-8">
             <button
-              onClick={() => navigate("/place-order")}
+              onClick={() =>navigate('/place-order', {
+                state: {
+                  cartData: cartData,
+                  selectedItems: selectedItems
+                }
+              })}
               className="bg-black text-white text-sm px-8 py-3 hover:bg-gray-800 transition-colors"
               disabled={Object.values(selectedItems).filter(Boolean).length === 0}
             >

@@ -3,7 +3,17 @@ const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+// Enhanced CORS configuration
 
+const app = express();
+app.use(cors({
+    origin: ['https://pbms-frontend.onrender.com', 'http://localhost:3000'], // Add your frontend URLs
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+  }));
+  
+  app.use(express.json());
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -172,7 +182,7 @@ app.post('/chat', async (req, res) => {
 app.get('/', (req, res) => {
   res.send('Gemini-powered Chatbot API is running!');
 });
-
+app.options('/chat', cors());
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

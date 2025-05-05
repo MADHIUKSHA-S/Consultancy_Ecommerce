@@ -4,37 +4,218 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pbms</title>
+    <title>PBMS Bearing Solutions</title>
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-
-
+    <style>
+      /* Chatbot Floating Button */
+      .chatbot-floating {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        z-index: 9999;
+      }
+      .chatbot-button {
+        width: 60px;
+        height: 60px;
+        background: #0F53B4;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        cursor: pointer;
+        border: none;
+      }
+      .chatbot-button img {
+        width: 30px;
+        height: 30px;
+      }
+      
+      /* Chatbot Window */
+      .chatbot-window {
+        position: fixed;
+        bottom: 100px;
+        right: 30px;
+        width: 350px;
+        height: 500px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        display: none;
+        flex-direction: column;
+        z-index: 9998;
+        overflow: hidden;
+      }
+      .chatbot-header {
+        background: #0F53B4;
+        color: white;
+        padding: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .chatbot-messages {
+        flex: 1;
+        padding: 15px;
+        overflow-y: auto;
+        background: #f8f9fa;
+      }
+      .message {
+        margin-bottom: 10px;
+        padding: 10px 15px;
+        border-radius: 18px;
+        max-width: 80%;
+        font-size: 14px;
+      }
+      .user-message {
+        background: #e3f2fd;
+        margin-left: auto;
+        border-bottom-right-radius: 5px;
+      }
+      .bot-message {
+        background: white;
+        margin-right: auto;
+        border: 1px solid #e0e0e0;
+        border-bottom-left-radius: 5px;
+      }
+      .chatbot-input {
+        padding: 10px;
+        display: flex;
+        border-top: 1px solid #eee;
+        background: white;
+      }
+      #chatbotInput {
+        flex: 1;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 20px;
+        outline: none;
+      }
+      #chatbotSend {
+        background: #0F53B4;
+        color: white;
+        border: none;
+        border-radius: 20px;
+        padding: 10px 15px;
+        margin-left: 10px;
+        cursor: pointer;
+      }
+      .typing-indicator {
+        display: none;
+        padding: 10px 15px;
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 18px;
+        margin-right: auto;
+        margin-bottom: 10px;
+        width: fit-content;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
-    <script src='https://cdn.jotfor.ms/s/umd/latest/for-embedded-agent.js'></script>
-<script>
-  window.addEventListener("DOMContentLoaded", function() {
-    window.AgentInitializer.init({
-      agentRenderURL: "https://agent.jotform.com/01968218794873e39cc6a6add11e5da2ad99",
-      rootId: "JotformAgent-01968218794873e39cc6a6add11e5da2ad99",
-      formID: "01968218794873e39cc6a6add11e5da2ad99",
-      queryParams: ["skipWelcome=1", "maximizable=1"],
-      domain: "https://www.jotform.com",
-      isDraggable: false,
-      background: "linear-gradient(180deg, #0F53B4 0%, #0F53B4 100%)",
-      buttonBackgroundColor: "#246506",
-      buttonIconColor: "#FFFFFF",
-      variant: false,
-      customizations: {
-        "greeting": "Yes",
-        "greetingMessage": "Hi! How can I assist you?",
-        "pulse": "Yes",
-        "position": "right"
+    
+    <!-- Chatbot Widget -->
+    <div class="chatbot-floating">
+      <button class="chatbot-button" id="chatbotToggle">
+        <img src="https://cdn-icons-png.flaticon.com/512/134/134914.png" alt="Chat">
+      </button>
+    </div>
+    
+    <div class="chatbot-window" id="chatbotWindow">
+      <div class="chatbot-header">
+        <h3>PBMS Assistant</h3>
+        <button id="chatbotClose" style="background:none;border:none;color:white;font-size:20px;">×</button>
+      </div>
+      <div class="chatbot-messages" id="chatbotMessages">
+        <div class="message bot-message">
+          Hello! I'm your PBMS assistant. How can I help you with bearings today?
+        </div>
+        <div class="typing-indicator" id="typingIndicator">
+          PBMS Assistant is typing...
+        </div>
+      </div>
+      <div class="chatbot-input">
+        <input type="text" id="chatbotInput" placeholder="Type your message...">
+        <button id="chatbotSend">Send</button>
+      </div>
+    </div>
+
+    <script>
+      // Toggle chatbot window
+      const chatbotToggle = document.getElementById('chatbotToggle');
+      const chatbotWindow = document.getElementById('chatbotWindow');
+      const chatbotClose = document.getElementById('chatbotClose');
+      const chatbotMessages = document.getElementById('chatbotMessages');
+      const chatbotInput = document.getElementById('chatbotInput');
+      const chatbotSend = document.getElementById('chatbotSend');
+      const typingIndicator = document.getElementById('typingIndicator');
+      
+      // Toggle functions
+      chatbotToggle.addEventListener('click', () => {
+        chatbotWindow.style.display = chatbotWindow.style.display === 'flex' ? 'none' : 'flex';
+      });
+      
+      chatbotClose.addEventListener('click', () => {
+        chatbotWindow.style.display = 'none';
+      });
+
+      // Improved Chatbot functionality
+      async function sendMessage() {
+  const message = chatbotInput.value.trim();
+  if (!message) return;
+  
+  addMessage(message, 'user');
+  chatbotInput.value = '';
+  typingIndicator.style.display = 'block';
+  chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+  
+  try {
+    const response = await fetch('https://pbms-chatbot.onrender.com/chat', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
-      isVoice: false,
+      body: JSON.stringify({ message: message }),
+      credentials: 'include' // Add this line if using credentials
     });
-  });
-</script>
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    addMessage(data.reply, 'bot');
+    
+  } catch (error) {
+    console.error('Chatbot Error:', error);
+    addMessage("Sorry, I'm having trouble connecting to the assistant. Please try again later.", 'bot');
+    
+    // For debugging only - remove in production
+    if (error.message.includes('Failed to fetch')) {
+      addMessage("Network error - could not reach the server", 'bot');
+    }
+  } finally {
+    typingIndicator.style.display = 'none';
+  }
+}
+      
+      function addMessage(text, sender) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${sender}-message`;
+        messageDiv.textContent = text;
+        chatbotMessages.insertBefore(messageDiv, typingIndicator);
+        chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+      }
+      
+      // Event listeners
+      chatbotSend.addEventListener('click', sendMessage);
+      chatbotInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMessage();
+      });
+    </script>
   </body>
-</html> 
+</html>

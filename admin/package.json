@@ -12,6 +12,8 @@
   "dependencies": {
     "admin": "file:",
     "axios": "^1.7.7",
+    "jspdf": "^2.5.1",
+    "jspdf-autotable": "^3.5.28",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.2",

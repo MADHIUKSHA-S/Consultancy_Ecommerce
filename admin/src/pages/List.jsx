@@ -2,6 +2,9 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { backendUrl, currency } from "../App";
 import { toast } from "react-toastify";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
+
 
 const List = ({ token }) => {
   const [listProducts, setListProducts] = useState([]);
@@ -41,7 +44,42 @@ const List = ({ token }) => {
       toast.error("Failed to remove product");
     }
   };
-
+ 
+  
+  const downloadProductsPDF = () => {
+    try {
+      // Initialize jsPDF
+      const doc = new jsPDF();
+      
+      // Add title
+      doc.setFontSize(16);
+      doc.text("Products Report", 14, 10);
+      
+      // Prepare data
+      const tableData = listProducts.map((item, index) => [
+        index + 1,
+        item.name,
+        item.description,
+        item.category,
+        currency(item.price),
+      ]);
+  
+      // Add table
+      doc.autoTable({
+        head: [["#", "Name", "Description", "Category", "Price"]],
+        body: tableData,
+        startY: 20,
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [22, 160, 133] }
+      });
+  
+      // Save the PDF
+      doc.save("products-report.pdf");
+    } catch (error) {
+      console.error("PDF generation error:", error);
+      toast.error("Failed to generate PDF");
+    }
+  };
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -89,6 +127,17 @@ const List = ({ token }) => {
   return (
     <>
       <div className="flex flex-col gap-2">
+      
+<div>{listProducts.length > 0 && (
+  <div className="mb-4 text-right">
+    <button
+      onClick={downloadProductsPDF}
+      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+    >
+      📄 Download Products PDF
+    </button>
+  </div>
+)}</div>
         <div className="hidden md:grid grid-cols-[0.5fr_1fr_1.5fr_0.5fr_0.5fr_0.5fr_0.5fr] items-center py-1 px-2 border bg-gray-200 text-xl text-center">
           <b>Image</b>
           <b>Name</b>
@@ -177,7 +226,9 @@ const List = ({ token }) => {
                 Save
               </button>
             </div>
+            
           </form>
+          
         </div>
       )}
     </>

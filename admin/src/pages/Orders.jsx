@@ -2,32 +2,73 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { backendUrl } from '../App'; // Your backend base URL
 import { toast } from 'react-toastify';
+import jsPDF from "jspdf";
+import autoTable from 'jspdf-autotable';
 
 const Orders = ({ token, adminAuth }) => {
   const [orders, setOrders] = useState([]);
   console.log(localStorage.getItem("token"))
   const fetchOrders = async () => {
     try {
-      const token = localStorage.getItem("token"); // Fetch token from localStorage
+      const token = localStorage.getItem("token");
       if (!token) {
-        throw new Error("No token found");
+        toast.error("Please login first");
+        return;
       }
   
       const response = await axios.get(`${backendUrl}/api/order/all-orders`, {
         headers: {
-          Authorization: `Bearer ${token}`, // Attach token as 'Bearer <token>'
-        },
+          Authorization: `Bearer ${token}` // Make sure to use 'Bearer' prefix
+        }
       });
   
-      setOrders(response.data.orders || []); // Assuming response contains the orders
+      setOrders(response.data.orders || []);
     } catch (error) {
-      console.error("Error fetching orders:", error);
-      toast.error("Failed to fetch orders.");
+      console.error("Error:", error.response?.data?.message || error.message);
+      toast.error(error.response?.data?.message || "Failed to fetch orders");
+      
+      // If token is invalid, clear it and redirect
+      if (error.response?.status === 401) {
+        localStorage.removeItem("token");
+        // You might want to redirect to login here
+      }
     }
   };
+  const downloadOrdersPDF = () => {
+    try {
+      const doc = new jsPDF();
+      
+      // Title
+      doc.setFontSize(16);
+      doc.text("Orders Report", 14, 10);
+      
+      // Data
+      const tableData = orders.map((order, index) => [
+        index + 1,
+        order._id.substring(0, 8) + "...", // Shorten ID
+        order.status,
+        `$${order.amount}`,
+        new Date(order.createdAt).toLocaleDateString(),
+        order.address?.email || "N/A",
+        order.items?.map(item => item.productId?.name).join(", ") || "N/A"
+      ]);
   
+      // Add table
+      autoTable(doc, { // Notice we're using autoTable directly
+        head: [["#", "Order ID", "Status", "Amount", "Date", "Email", "Products"]],
+        body: tableData,
+        startY: 20,
+        headStyles: {
+          fillColor: [41, 128, 185]
+        }
+      });
   
-  
+      doc.save("orders-report.pdf");
+    } catch (error) {
+      console.error("PDF error:", error);
+      toast.error("Failed to generate PDF");
+    }
+  };
 
   const handleUpdateStatus = async (orderId, newStatus) => {
     try {
@@ -65,7 +106,16 @@ orders.forEach(order => console.log("order.userId:", order?.userId));
       <h2 className="text-2xl font-bold mb-4">
         All Orders
       </h2>
-
+      { orders.length > 0 && (
+  <div className="mb-4">
+    <button
+      onClick={downloadOrdersPDF}
+      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+    >
+      📄 Download Orders PDF
+    </button>
+  </div>
+)}
       {orders.length === 0 ? (
         <p>No orders found.</p>
       ) : (

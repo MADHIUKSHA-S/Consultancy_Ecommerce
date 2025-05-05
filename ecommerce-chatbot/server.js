@@ -7,13 +7,13 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const app = express();
 app.use(cors({
-    origin: ['https://pbms-frontend.onrender.com', 'http://localhost:3000'], // Add your frontend URLs
+    origin: ['https://pbms-frontend.onrender.com', 'http://localhost:3000', 'http://localhost:5173'], // Add your frontend URLs
     methods: ['GET', 'POST', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
   }));
   
-  app.use(express.json());
+ 
 
 app.use(express.json());
 

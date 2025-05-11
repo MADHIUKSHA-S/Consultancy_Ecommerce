@@ -20,6 +20,7 @@ const Login = () => {
   // Password validation function
   const validatePassword = (pass) => {
     // Check for minimum length
+
     if (pass.length < 6) {
       return "Password must be at least 6 characters long";
     }
@@ -47,6 +48,7 @@ const Login = () => {
     }
   };
 
+  // Update the onSubmitHandler function to handle email verification
   const onSubmitHandler = async (event) => {
     event.preventDefault();
 
@@ -94,14 +96,35 @@ const Login = () => {
           setForgotPasswordMode(false);
           setCurrentState("Login");
         } else if (currentState === "Login") {
+          // Check if email is verified
+          if (data.requireVerification) {
+            // Redirect to OTP verification page
+            navigate("/verify-email", {
+              state: {
+                email,
+                userId: data.userId,
+                name: data.userName,
+              },
+            });
+            return;
+          }
+
+          // If verified, proceed with login
           localStorage.setItem("token", data.token);
           localStorage.setItem("userName", data.userName);
           setToken(data.token);
           setUserName(data.userName);
           navigate("/");
         } else {
-          toast.success("Account created successfully. Please login.");
-          setCurrentState("Login");
+          // For sign up, redirect to OTP verification page
+          navigate("/verify-email", {
+            state: {
+              email,
+              userId: data.userId,
+              name,
+            },
+          });
+          return;
         }
       } else {
         toast.error(data.message || "Something went wrong");

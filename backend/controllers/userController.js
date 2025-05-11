@@ -25,8 +25,7 @@ const loginUser = async (req, res) => {
 
     if (isPasswordCorrect) {
       const token = createToken(user._id);
-      res.status(200).json({ success: true ,token,
-        userName: user.name,});
+      res.status(200).json({ success: true, token, userName: user.name });
     } else {
       res
         .status(400)
@@ -76,13 +75,12 @@ const registerUser = async (req, res) => {
     // INFO: Save user to database
     const user = await newUser.save();
 
-   
     const token = jwt.sign(
-      { id: user._id, email: user.email },  // 👈 include both id and email
+      { id: user._id, email: user.email }, // 👈 include both id and email
       process.env.JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: "7d" }
     );
-    
+
     // INFO: Return success response
     res.status(200).json({ success: true, token });
   } catch (error) {
@@ -103,10 +101,14 @@ const loginAdmin = async (req, res) => {
       password === process.env.ADMIN_PASSWORD
     ) {
       // Create a token with the email (and possibly user ID) as the payload
-      const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+      const token = jwt.sign({ email }, process.env.JWT_SECRET, {
+        expiresIn: "1h",
+      });
       res.status(200).json({ success: true, token });
     } else {
-      res.status(401).json({ success: false, message: "Invalid email or password" }); // 401 is more appropriate for auth errors
+      res
+        .status(401)
+        .json({ success: false, message: "Invalid email or password" }); // 401 is more appropriate for auth errors
     }
   } catch (error) {
     console.log("Error while logging in admin: ", error);
@@ -120,7 +122,9 @@ const forgotPassword = async (req, res) => {
 
     // Check if email and new password provided
     if (!email || !newPassword) {
-      return res.status(400).json({ success: false, message: "All fields are required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "All fields are required" });
     }
 
     // Validate email
@@ -139,7 +143,9 @@ const forgotPassword = async (req, res) => {
     // Find user by email
     const user = await userModel.findOne({ email });
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     // Hash the new password
@@ -150,12 +156,48 @@ const forgotPassword = async (req, res) => {
     user.password = hashedPassword;
     await user.save();
 
-    res.status(200).json({ success: true, message: "Password updated successfully" });
+    res
+      .status(200)
+      .json({ success: true, message: "Password updated successfully" });
   } catch (error) {
     console.error("Error while changing password:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
+// Check if email exists
+export const checkEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
 
-export { loginUser, registerUser, loginAdmin ,forgotPassword };
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
+
+    // Check if user already exists
+    const existingUser = await userModel.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is already registered",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Email is available",
+    });
+  } catch (error) {
+    console.error("Email check error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while checking email",
+      error: error.message,
+    });
+  }
+};
+
+export { loginUser, registerUser, loginAdmin, forgotPassword };

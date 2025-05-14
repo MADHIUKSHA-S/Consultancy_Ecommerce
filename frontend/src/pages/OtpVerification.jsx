@@ -96,8 +96,7 @@ const OtpVerification = () => {
     setIsLoading(true);
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/user/send-otp`,
-        {
+        `${import.meta.env.VITE_BACKEND_URL}/api/user/send-otp`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

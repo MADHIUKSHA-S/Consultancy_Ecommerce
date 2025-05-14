@@ -197,23 +197,88 @@ router.delete('/item/:orderId/:productId', authMiddleware, async (req, res) => {
     res.status(500).json({ message: 'Failed to delete item' });
   }
 });
+// GET /api/order/:id — Get single order details (user route or admin route depending on need)
 
 
+// GET /api/order/:orderId - Fetch single order details
+router.get('/:orderId', authMiddleware, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.orderId)
+      .populate({
+        path: 'items.productId',
+        select: 'name price images description'
+      })
+      .populate({
+        path: 'userId',
+        select: 'email'
+      });
+
+    if (!order) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Order not found' 
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      order
+    });
+    console.log("Fetched order: ", order);
+  } catch (error) {
+    console.error('Error fetching order:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error fetching order details',
+      error: error.message 
+    });
+  }
+});
+
+// PUT /api/order/update-status - Update order status with tracking info
 router.put('/update-status', adminAuth, async (req, res) => {
-  const { orderId, status } = req.body;
+  const { orderId, status, location, description } = req.body;
 
   try {
     const order = await Order.findById(orderId);
     if (!order) {
-      return res.status(404).json({ success: false, message: 'Order not found' });
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Order not found' 
+      });
     }
 
-    order.status = status; // Update status (Pending, Shipped, Delivered)
+    // Update order status
+    order.status = status;
+
+    // Add tracking update
+    order.trackingUpdates.push({
+      status,
+      location: location || 'Processing Center',
+      description: description || `Order ${status.toLowerCase()}`,
+      timestamp: new Date()
+    });
+
+    // Set estimated delivery date based on status
+    if (status === 'Shipped') {
+      order.estimatedDeliveryDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000); // 3 days from now
+    }
+
     await order.save();
 
-    res.json({ success: true, message: 'Order status updated' });
+    res.json({ 
+      success: true, 
+      message: 'Order status updated',
+      order 
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Error updating order status' });
+    console.error('Error updating order:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error updating order status',
+      error: error.message 
+    });
   }
 });
+
 export default router;

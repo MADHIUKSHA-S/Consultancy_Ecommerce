@@ -80,10 +80,11 @@ const Login = () => {
       setIsSubmitting(false);
     }
   };
-const onSubmitHandler = async (event) => {
+
+  const onSubmitHandler = async (event) => {
   event.preventDefault();
 
-   if (forgotPasswordMode) {
+  if (forgotPasswordMode) {
     try {
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/user/forgot-password`, {
         method: 'POST',
@@ -110,7 +111,6 @@ const onSubmitHandler = async (event) => {
     return;
   }
 
-
   // For Sign Up, validate password
   if (currentState === "Sign Up") {
     const error = validatePassword(password);
@@ -119,6 +119,7 @@ const onSubmitHandler = async (event) => {
       return;
     }
 
+    // Check if passwords match
     if (password !== confirmPassword) {
       setPasswordError("Passwords do not match");
       return;
@@ -147,7 +148,7 @@ const onSubmitHandler = async (event) => {
     const data = await response.json();
 
     if (response.ok) {
-       if (currentState === "Login") {
+      if (currentState === "Login") {
         // Check if email is verified
         if (data.requireVerification) {
           // Redirect to OTP verification page
@@ -167,7 +168,25 @@ const onSubmitHandler = async (event) => {
         setToken(data.token);
         setUserName(data.userName);
         navigate("/");
-      } 
+      } else {
+        // For sign up, redirect to OTP verification page
+        navigate("/verify-email", {
+          state: {
+            email,
+            userId: data.userId,
+            name,
+          },
+        });
+        
+        // After successful signup, redirect to login page
+        toast.success('Account created successfully! Please login.');
+        setCurrentState("Login"); // Switch to login form
+        setName("");
+        setEmail("");
+        setPassword("");
+        setConfirmPassword("");
+        return;
+      }
     } else {
       toast.error(data.message || "Something went wrong");
     }
@@ -175,7 +194,12 @@ const onSubmitHandler = async (event) => {
     console.error("Error:", error);
     toast.error("Network or server error");
   }
-   
+
+  setName("");
+  setEmail("");
+  setPassword("");
+  setConfirmPassword("");
+  setPasswordError("");
 };
   return (
     <div className="min-h-[70vh] flex justify-center items-center py-12">

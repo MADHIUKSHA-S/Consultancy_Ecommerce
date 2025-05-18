@@ -218,7 +218,6 @@ const forgotPasswordRequest = async (req, res) => {
   }
 };
 
-// Reset Password Route
 const resetPassword = async (req, res) => {
   try {
     const { token, newPassword } = req.body;
@@ -232,22 +231,36 @@ const resetPassword = async (req, res) => {
     });
 
     if (!user) {
-      return res.status(400).json({ message: "Invalid or expired reset token" });
+      return res.status(400).json({ success: false, message: "Invalid or expired reset token" });
     }
 
-    // Update password
-    user.password = newPassword;
+    // Validate new password length
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 8 characters",
+      });
+    }
+
+    // Hash the new password before saving
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Update password and clear reset token
+    user.password = hashedPassword;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
     await user.save();
 
-    res.json({ message: "Password has been reset" });
+    res.json({ success: true, message: "Password has been reset successfully" });
   } catch (error) {
     console.error("Reset password error:", error);
-    res.status(500).json({ message: "Error resetting password" });
+    if (error.name === 'TokenExpiredError' || error.name === 'JsonWebTokenError') {
+      return res.status(400).json({ success: false, message: "Invalid or expired reset token" });
+    }
+    res.status(500).json({ success: false, message: "Error resetting password" });
   }
 };
-
 // Check if email exists
 export const checkEmail = async (req, res) => {
   try {

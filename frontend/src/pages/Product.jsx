@@ -149,37 +149,7 @@ const Product = () => {
               {/* Quantity and Add to Cart */}
               <div className="mb-6">
                 <div className="flex flex-col sm:flex-row gap-4">
-                  {/* Quantity Selector */}
-                  <div className="flex items-center">
-                    <label className="mr-3 text-sm font-medium text-gray-700">
-                      Quantity
-                    </label>
-                    <div className="flex border border-gray-300 rounded-md">
-                      <button
-                        onClick={decreaseQuantity}
-                        className="px-3 py-1 text-gray-600 hover:bg-gray-100 focus:outline-none"
-                      >
-                        −
-                      </button>
-                      <input
-                        type="number"
-                        className="w-12 text-center border-x border-gray-300 py-1 focus:outline-none"
-                        value={quantity}
-                        onChange={(e) =>
-                          setQuantity(
-                            Math.max(1, parseInt(e.target.value) || 1)
-                          )
-                        }
-                      />
-                      <button
-                        onClick={increaseQuantity}
-                        className="px-3 py-1 text-gray-600 hover:bg-gray-100 focus:outline-none"
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-
+                 
                   {/* Add to Cart Button */}
                   <motion.button
                     whileHover={{ scale: 1.02 }}
@@ -298,14 +268,14 @@ const Product = () => {
           </p>
         </div>
       )}
-
+ 
       {/* Related Products Section */}
       {productData && (
         <div className="mt-16">
           <h2 className="text-xl font-bold mb-6">Related Products</h2>
           <RelatedProducts category={productData.category} />
         </div>
-      )}
+      )}   
     </div>
   );
 };

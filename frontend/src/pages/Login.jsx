@@ -23,8 +23,8 @@ const Login = () => {
   const validatePassword = (pass) => {
     // Check for minimum length
 
-    if (pass.length < 6) {
-      return "Password must be at least 6 characters long";
+    if (pass.length < 8) {
+      return "Password must be at least 8 characters long";
     }
 
     // Check for special character
@@ -82,118 +82,125 @@ const Login = () => {
   };
 
   const onSubmitHandler = async (event) => {
-    event.preventDefault();
+  event.preventDefault();
 
-    if (forgotPasswordMode) {
-      try {
-        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/user/forgot-password`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ email }),
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-          toast.success('Password reset link has been sent to your email');
-          setEmail('');
-          setForgotPasswordMode(false);
-          setCurrentState('Login');
-        } else {
-          toast.error(data.message || 'Failed to send reset link');
-        }
-      } catch (error) {
-        console.error('Error:', error);
-        toast.error('Network or server error');
-      }
-      return;
-    }
-
-    // For Sign Up, validate password
-    if (currentState === "Sign Up") {
-      const error = validatePassword(password);
-      if (error) {
-        setPasswordError(error);
-        return;
-      }
-
-      // Check if passwords match
-      if (password !== confirmPassword) {
-        setPasswordError("Passwords do not match");
-        return;
-      }
-    }
-
-    const endpoint =
-      currentState === "Login"
-        ? `${import.meta.env.VITE_BACKEND_URL}/api/user/login`
-        : `${import.meta.env.VITE_BACKEND_URL}/api/user/register`;
-
-    const payload =
-      currentState === "Login"
-        ? { email, password }
-        : { name, email, password };
-
+  if (forgotPasswordMode) {
     try {
-      const response = await fetch(endpoint, {
-        method: "POST",
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/user/forgot-password`, {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ email }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        if (currentState === "Login") {
-          // Check if email is verified
-          if (data.requireVerification) {
-            // Redirect to OTP verification page
-            navigate("/verify-email", {
-              state: {
-                email,
-                userId: data.userId,
-                name: data.userName,
-              },
-            });
-            return;
-          }
+        toast.success('Password reset link has been sent to your email');
+        setEmail('');
+        setForgotPasswordMode(false);
+        setCurrentState('Login');
+      } else {
+        toast.error(data.message || 'Failed to send reset link');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Network or server error');
+    }
+    return;
+  }
 
-          // If verified, proceed with login
-          localStorage.setItem("token", data.token);
-          localStorage.setItem("userName", data.userName);
-          setToken(data.token);
-          setUserName(data.userName);
-          navigate("/");
-        } else {
-          // For sign up, redirect to OTP verification page
+  // For Sign Up, validate password
+  if (currentState === "Sign Up") {
+    const error = validatePassword(password);
+    if (error) {
+      setPasswordError(error);
+      return;
+    }
+
+    // Check if passwords match
+    if (password !== confirmPassword) {
+      setPasswordError("Passwords do not match");
+      return;
+    }
+  }
+
+  const endpoint =
+    currentState === "Login"
+      ? `${import.meta.env.VITE_BACKEND_URL}/api/user/login`
+      : `${import.meta.env.VITE_BACKEND_URL}/api/user/register`;
+
+  const payload =
+    currentState === "Login"
+      ? { email, password }
+      : { name, email, password };
+
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      if (currentState === "Login") {
+        // Check if email is verified
+        if (data.requireVerification) {
+          // Redirect to OTP verification page
           navigate("/verify-email", {
             state: {
               email,
               userId: data.userId,
-              name,
+              name: data.userName,
             },
           });
           return;
         }
+
+        // If verified, proceed with login
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("userName", data.userName);
+        setToken(data.token);
+        setUserName(data.userName);
+        navigate("/");
       } else {
-        toast.error(data.message || "Something went wrong");
+        // For sign up, redirect to OTP verification page
+        navigate("/verify-email", {
+          state: {
+            email,
+            userId: data.userId,
+            name,
+          },
+        });
+        
+        // After successful signup, redirect to login page
+        toast.success('Account created successfully! Please login.');
+        setCurrentState("Login"); // Switch to login form
+        setName("");
+        setEmail("");
+        setPassword("");
+        setConfirmPassword("");
+        return;
       }
-    } catch (error) {
-      console.error("Error:", error);
-      toast.error("Network or server error");
+    } else {
+      toast.error(data.message || "Something went wrong");
     }
+  } catch (error) {
+    console.error("Error:", error);
+    toast.error("Network or server error");
+  }
 
-    setName("");
-    setEmail("");
-    setPassword("");
-    setConfirmPassword("");
-    setPasswordError("");
-  };
-
+  setName("");
+  setEmail("");
+  setPassword("");
+  setConfirmPassword("");
+  setPasswordError("");
+};
   return (
     <div className="min-h-[70vh] flex justify-center items-center py-12">
       <div className="w-full max-w-md px-6">
@@ -333,7 +340,7 @@ const Login = () => {
                 )}
                 {currentState === "Sign Up" && !passwordError && password && (
                   <p className="mt-1 text-xs text-gray-500">
-                    Password must be at least 6 characters and contain a special
+                    Password must be at least 8 characters and contain a special
                     character.
                   </p>
                 )}

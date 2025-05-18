@@ -6,6 +6,7 @@ import { FaEye, FaEyeSlash } from 'react-icons/fa';
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
+  const [isLoading, setIsLoading] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -26,15 +27,17 @@ const ResetPassword = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+setIsLoading(true);
     const error = validatePassword(password);
     if (error) {
       setPasswordError(error);
+        setIsLoading(false);
       return;
     }
 
     if (password !== confirmPassword) {
       setPasswordError('Passwords do not match');
+      setIsLoading(false);
       return;
     }
 
@@ -66,7 +69,9 @@ const ResetPassword = () => {
     } catch (error) {
       console.error('Error:', error);
       toast.error('Network or server error');
-    }
+    } finally {
+    setIsLoading(false);
+  }
   };
 
   // Check if token exists
@@ -151,11 +156,12 @@ const ResetPassword = () => {
           </div>
 
           <button
-            type="submit"
-            className="w-full px-4 py-3 font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
-            Reset Password
-          </button>
+  type="submit"
+  disabled={isLoading}
+  className={`w-full px-4 py-3 font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+>
+  {isLoading ? 'Resetting...' : 'Reset Password'}
+</button>
         </form>
       </div>
     </div>

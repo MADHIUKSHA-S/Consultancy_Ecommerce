@@ -157,7 +157,7 @@ const OtpVerification = () => {
           setUserName(data.user.name || name);
         }
 
-        navigate("/");
+        navigate("/login");
       } else {
         toast.error(data.message || "Invalid OTP");
       }

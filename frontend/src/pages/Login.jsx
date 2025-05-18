@@ -175,11 +175,7 @@ const onSubmitHandler = async (event) => {
     console.error("Error:", error);
     toast.error("Network or server error");
   }
-    setName("");
-  setEmail("");
-  setPassword("");
-  setConfirmPassword("");
-  setPasswordError("");
+   
 };
   return (
     <div className="min-h-[70vh] flex justify-center items-center py-12">

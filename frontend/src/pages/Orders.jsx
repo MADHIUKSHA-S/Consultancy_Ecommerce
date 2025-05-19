@@ -1,27 +1,18 @@
-import React, { useContext, useEffect, useState } from "react";
-import { ShopContext } from "../context/ShopContext";
-import axios from "axios";
-import Title from "../components/Title";
-import { toast as toast1 } from "react-toastify";
-import { toast as toast2 } from "react-hot-toast";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  FaBox,
-  FaShippingFast,
-  FaCheckCircle,
-  FaTimesCircle,
-  FaTrashAlt,
-  FaCreditCard,
-} from "react-icons/fa";
-import { MdLocationOn } from "react-icons/md";
-import { Link } from "react-router-dom";
+import React, { useContext, useEffect, useState } from 'react';
+import { ShopContext } from '../context/ShopContext';
+import axios from 'axios';
+import Title from '../components/Title';
+import { toast as toast1 } from 'react-toastify';
+import { toast as toast2 } from 'react-hot-toast';
+import binIcon from '../assets/bin_icon.png';
+import { useNavigate } from 'react-router-dom';
 
 const Orders = () => {
   const { backendUrl, token, currency, logout } = useContext(ShopContext);
   const [orderData, setOrderData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeOrderId, setActiveOrderId] = useState(null);
+  const navigate = useNavigate();
 
   const loadOrderData = async () => {
     try {
@@ -29,62 +20,49 @@ const Orders = () => {
       setError(null);
 
       if (!token) {
-        setError("Please login to view orders");
+        setError('Please login to view orders');
         setLoading(false);
         return;
       }
 
       const response = await axios.get(`${backendUrl}/api/order/userOrders`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}` }
       });
 
-      // Group orders by orderId to maintain order structure
-      const ordersMap = {};
+      // Sort the orders by createdAt descending (latest first)
+      const sortedOrders = response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-      response.data
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-        .forEach((order) => {
-          if (!ordersMap[order._id]) {
-            ordersMap[order._id] = {
-              orderId: order._id,
-              date: order.createdAt,
-              status: order.status,
-              payment: order.amount,
-              paymentMethod: order.paymentMethod || "Cash on delivery",
-              address: order.address || {},
-              items: [],
-            };
-          }
+      const transformedData = sortedOrders.flatMap(order =>
+        order.items.map(item => {
+          const isPopulated = item.productId && typeof item.productId === 'object' && '_id' in item.productId;
+          const product = isPopulated ? item.productId : {};
 
-          order.items.forEach((item) => {
-            const isPopulated =
-              item.productId &&
-              typeof item.productId === "object" &&
-              "_id" in item.productId;
-            const product = isPopulated ? item.productId : {};
+          return {
+            _id: isPopulated ? product._id : item.productId,
+            name: product.name || item.name || 'Product not available',
+            price: product.price ?? item.price ?? 0,
+            quantity: item.quantity || 1,
+            size: item.size || '',
+            images: product.images || [],
+            status: order.status || 'processing',
+            payment: order.amount || 0,
+            paymentMethod: order.paymentMethod || 'Cash on delivery',
+            date: order.createdAt || new Date().toISOString(),
+            orderId: order._id,
+            address: order.address || {}
+          };
+        })
+      );
 
-            ordersMap[order._id].items.push({
-              _id: isPopulated ? product._id : item.productId,
-              name: product.name || item.name || "Product not available",
-              price: product.price ?? item.price ?? 0,
-              quantity: item.quantity || 1,
-              size: item.size || "",
-              images: product.images || [],
-              itemTotal:
-                (product.price ?? item.price ?? 0) * (item.quantity || 1),
-            });
-          });
-        });
-
-      setOrderData(Object.values(ordersMap));
-      console.log("Grouped Orders:", Object.values(ordersMap));
+      setOrderData(transformedData);
+      console.log("Final Transformed Orders:", transformedData);
     } catch (error) {
-      console.error("Error loading orders:", error);
+      console.error('Error loading orders:', error);
       if (error.response?.status === 401) {
-        setError("Session expired. Please login again.");
+        setError('Session expired. Please login again.');
         logout();
       } else {
-        setError(error.response?.data?.message || "Failed to load orders");
+        setError(error.response?.data?.message || 'Failed to load orders');
       }
     } finally {
       setLoading(false);
@@ -93,27 +71,48 @@ const Orders = () => {
 
   const cancelOrder = async (orderId) => {
     toast2.custom((t) => (
-      <div className="bg-white p-4 rounded-lg shadow-lg border border-red-200 w-72">
-        <div className="mb-3 font-medium">Cancel Order?</div>
-        <p className="text-gray-600 text-sm mb-4">
-          This action cannot be undone. Are you sure you want to cancel this
-          order?
-        </p>
-        <div className="flex justify-end gap-2">
+      <div
+        style={{
+          background: 'white',
+          padding: '16px',
+          borderRadius: '8px',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px',
+          width: '260px',
+          border: '1px solid #f44336' // red outline
+        }}
+      >
+        <span>Are you sure you want to cancel this order?</span>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
           <button
             onClick={() => {
               toast2.dismiss(t.id);
               proceedCancelOrder(orderId);
             }}
-            className="px-4 py-2 bg-red-500 text-white text-sm rounded hover:bg-red-600 transition-colors"
+            style={{
+              backgroundColor: '#dc3545',
+              color: 'white',
+              border: 'none',
+              padding: '6px 12px',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
           >
-            Yes, Cancel
+            Yes
           </button>
           <button
             onClick={() => toast2.dismiss(t.id)}
-            className="px-4 py-2 bg-gray-100 text-gray-800 text-sm rounded hover:bg-gray-200 transition-colors"
+            style={{
+              backgroundColor: '#f0f0f0',
+              border: 'none',
+              padding: '6px 12px',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
           >
-            No, Keep
+            No
           </button>
         </div>
       </div>
@@ -122,442 +121,259 @@ const Orders = () => {
 
   const proceedCancelOrder = async (orderId) => {
     try {
-      const response = await axios.put(
-        `${backendUrl}/api/order/cancel/${orderId}`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      toast1.success(response.data.message || "Order cancelled successfully");
+      const response = await axios.put(`${backendUrl}/api/order/cancel/${orderId}`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast1.success(response.data.message || 'Order cancelled successfully');
       loadOrderData(); // Refresh order list
     } catch (error) {
-      console.error("Cancellation error:", error);
-      toast1.error(error.response?.data?.message || "Failed to cancel order");
+      console.error('Cancellation error:', error);
+      toast1.error(error.response?.data?.message || 'Failed to cancel order');
     }
   };
 
-  const handleDelete = async (orderId, productId) => {
-    try {
-      await axios.delete(
-        `${backendUrl}/api/order/item/${orderId}/${productId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      toast1.success("Item removed from order");
-      loadOrderData(); // Refresh the list
-    } catch (error) {
-      console.error("Delete error:", error);
-      toast1.error(error.response?.data?.message || "Failed to remove item");
-    }
+  const trackOrder = (orderId) => {
+    navigate(`/track-order?id=${orderId}`);
   };
 
-  useEffect(() => {
-    if (token) loadOrderData();
-  }, [token]);
+ useEffect(() => {
+  if (token) {
+    loadOrderData();
+
+    const interval = setInterval(() => {
+      loadOrderData(); // fetch updated order status periodically
+    }, 10000); // every 10 seconds (adjust as needed)
+
+    return () => clearInterval(interval); // cleanup
+  }
+}, [token]);
+
+  
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
-  const formatTime = (dateString) => {
-    return new Date(dateString).toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  const getStatusIcon = (status) => {
+  const getStatusColor = (status) => {
     switch (status.toLowerCase()) {
-      case "completed":
-        return <FaCheckCircle className="text-green-500 text-lg" />;
-      case "processing":
-        return <FaBox className="text-yellow-500 text-lg" />;
-      case "shipped":
-        return <FaShippingFast className="text-blue-500 text-lg" />;
-      case "cancelled":
-        return <FaTimesCircle className="text-red-500 text-lg" />;
-      default:
-        return <FaBox className="text-yellow-500 text-lg" />;
+      case 'completed': return { background: '#d4edda', color: '#155724' };
+      case 'cancelled': return { background: '#f8d7da', color: '#721c24' };
+      default: return { background: '#fff3cd', color: '#856404' };
+    }
+  };
+  
+  const handleDelete = async (orderId, productId) => {
+    try {
+      await axios.delete(`${backendUrl}/api/order/item/${orderId}/${productId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast1.success('Item deleted successfully');
+      loadOrderData(); // Refresh the list
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast1.error(error.response?.data?.message || 'Failed to delete item');
     }
   };
 
-  const getStatusClass = (status) => {
-    switch (status.toLowerCase()) {
-      case "completed":
-        return "bg-green-100 text-green-800 border-green-200";
-      case "cancelled":
-        return "bg-red-100 text-red-800 border-red-200";
-      case "shipped":
-        return "bg-blue-100 text-blue-800 border-blue-200";
-      default:
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
-    }
-  };
-
-  // Loading state with animation
   if (loading) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center p-6">
-        <div className="animate-pulse flex flex-col items-center">
-          <div className="h-16 w-16 mb-4 rounded-full bg-gray-200"></div>
-          <div className="h-4 w-48 bg-gray-200 rounded"></div>
-          <div className="h-3 w-32 mt-3 bg-gray-200 rounded"></div>
-        </div>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '300px',
+        fontSize: '18px'
+      }}>
+        Loading your orders...
       </div>
     );
   }
 
-  // Error state with improved design
   if (error) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center p-6 text-center">
-        <div className="bg-red-50 border border-red-100 rounded-xl p-8 max-w-md">
-          <FaTimesCircle className="text-red-500 text-4xl mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">
-            Unable to Load Orders
-          </h3>
-          <p className="text-gray-600 mb-6">{error}</p>
-          <button
-            onClick={loadOrderData}
-            className="px-6 py-3 bg-black text-white rounded-md hover:bg-gray-800 transition-colors"
-          >
-            Try Again
-          </button>
-        </div>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '300px',
+        padding: '20px',
+        textAlign: 'center'
+      }}>
+        <p style={{ color: '#dc3545', marginBottom: '20px' }}>{error}</p>
+        <button
+          onClick={loadOrderData}
+          style={{
+            padding: '8px 16px',
+            backgroundColor: '#000',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+        >
+          Retry
+        </button>
       </div>
     );
   }
 
-  // Empty state with improved design
   if (!orderData.length) {
     return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center">
-        <div className="max-w-md">
-          <div className="bg-gray-50 rounded-full h-24 w-24 flex items-center justify-center mx-auto mb-6">
-            <FaBox className="text-4xl text-gray-300" />
-          </div>
-          <h2 className="text-2xl font-semibold text-gray-800 mb-3">
-            No Orders Yet
-          </h2>
-          <p className="text-gray-600 mb-8">
-            You haven't placed any orders yet. Start shopping and discover our
-            amazing products!
-          </p>
-          <Link
-            to="/shop"
-            className="px-6 py-3 bg-black text-white rounded-md inline-block hover:bg-gray-800 transition-colors"
-          >
-            Explore Products
-          </Link>
-        </div>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '300px',
+        padding: '20px',
+        textAlign: 'center'
+      }}>
+        <p style={{ fontSize: '18px', marginBottom: '20px' }}>You haven't placed any orders yet.</p>
+        <a
+          href="/shop"
+          style={{
+            padding: '10px 20px',
+            backgroundColor: '#000',
+            color: '#fff',
+            textDecoration: 'none',
+            borderRadius: '4px'
+          }}
+        >
+          Start Shopping
+        </a>
       </div>
     );
   }
 
-  // Main content
   return (
-    <div className="max-w-6xl mx-auto px-4 py-10">
-      <div className="mb-10">
-        <Title text1="YOUR" text2="ORDERS" />
-        <p className="text-gray-500 text-center mt-2">
-          Track and manage all your purchases
-        </p>
+    <div style={{
+      maxWidth: '1200px',
+      margin: '0 auto',
+      padding: '20px'
+    }}>
+      <div className="text-2xl mb-8">
+        <Title text1={"YOUR"} text2={"ORDERS"} />
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="divide-y divide-gray-100">
-          <AnimatePresence>
-            {orderData.map((order) => (
-              <motion.div
-                key={order.orderId}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="order-container"
+      <div style={{ marginTop: '20px' }}>
+        {orderData.slice().reverse().map((item, index) => (
+          <div key={`${item.orderId}-${index}`} style={{
+            border: '1px solid #e0e0e0',
+            borderRadius: '8px',
+            padding: '20px',
+            marginBottom: '20px'
+          }}>
+            {/* Order Header */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              marginBottom: '15px',
+              paddingBottom: '10px',
+              borderBottom: '1px solid #f0f0f0'
+            }}>
+              <span style={{ fontWeight: '500' }}>
+                Order #{item.orderId?.slice(-6).toUpperCase()}
+              </span>
+              <span style={{ color: '#666' }}>
+                {formatDate(item.date)}
+              </span>
+              <span style={{
+                padding: '3px 8px',
+                borderRadius: '4px',
+                fontSize: '0.8em',
+                ...getStatusColor(item.status)
+              }}>
+                {item.status.toUpperCase()}
+              </span>
+              <button
+                onClick={() => handleDelete(item.orderId, item._id)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
               >
-                {/* Order Header */}
-                <div
-                  className="p-5 hover:bg-gray-50 transition-colors cursor-pointer"
-                  onClick={() =>
-                    setActiveOrderId(
-                      activeOrderId === order.orderId ? null : order.orderId
-                    )
-                  }
+                <img src={binIcon} alt="Delete" style={{ width: '20px', height: '20px' }} />
+              </button>
+            </div>
+
+            {/* Product Info */}
+            <div style={{
+              display: 'flex',
+              gap: '20px',
+              marginBottom: '15px'
+            }}>
+              <div>
+                <h3 style={{
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  marginBottom: '5px'
+                }}>
+                  {item.name}
+                </h3>
+                <p style={{ margin: '3px 0', fontSize: '14px' }}>
+                  Quantity: {item.quantity}
+                </p>
+                <p style={{ margin: '3px 0', fontSize: '14px' }}>
+                  Price: {currency}{item.price?.toFixed(2)}
+                </p>
+              </div>
+            </div>
+
+            {/* Order Footer */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              paddingTop: '10px',
+              borderTop: '1px solid #f0f0f0'
+            }}>
+              <div>
+                <p style={{ margin: '3px 0', fontSize: '14px' }}>
+                  Total: {currency}{item.payment?.toFixed(2)}
+                </p>
+                <p style={{ margin: '3px 0', fontSize: '14px' }}>
+                  Payment: {item.paymentMethod}
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  onClick={() => trackOrder(item.orderId)}
+                  style={{
+                    padding: '6px 12px',
+                    backgroundColor: '#007bff',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
                 >
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center">
-                      {getStatusIcon(order.status)}
-                      <span className="ml-2 font-medium text-gray-800">
-                        Order #{order.orderId.slice(-6).toUpperCase()}
-                      </span>
-                    </div>
+                  Track Order
+                </button>
 
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-gray-500">
-                        {formatDate(order.date)}
-                      </span>
-                      <span
-                        className={`text-xs px-3 py-1 rounded-full font-medium ${getStatusClass(
-                          order.status
-                        )}`}
-                      >
-                        {order.status.toUpperCase()}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="mt-2 flex flex-wrap items-center justify-between text-sm">
-                    <div className="text-gray-600">
-                      <span>
-                        {order.items.length} item
-                        {order.items.length !== 1 ? "s" : ""}
-                      </span>
-                      <span className="mx-2">•</span>
-                      <span>
-                        Total:{" "}
-                        <span className="font-medium">
-                          {currency}
-                          {order.payment?.toFixed(2)}
-                        </span>
-                      </span>
-                    </div>
-                    <div
-                      className={`text-sm ${
-                        activeOrderId === order.orderId
-                          ? "text-blue-500"
-                          : "text-gray-500"
-                      }`}
-                    >
-                      {activeOrderId === order.orderId
-                        ? "Hide Details"
-                        : "View Details"}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Order Details (expandable) */}
-                <AnimatePresence>
-                  {activeOrderId === order.orderId && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="bg-gray-50 overflow-hidden"
-                    >
-                      <div className="p-5 border-t border-gray-100">
-                        {/* Order info and shipping */}
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                          {/* Order Info */}
-                          <div className="bg-white p-4 rounded-lg border border-gray-100 shadow-sm">
-                            <h3 className="font-semibold text-gray-800 mb-3">
-                              Order Information
-                            </h3>
-                            <ul className="space-y-2 text-sm">
-                              <li className="flex justify-between">
-                                <span className="text-gray-500">Order ID:</span>
-                                <span className="font-medium">
-                                  {order.orderId.slice(-8).toUpperCase()}
-                                </span>
-                              </li>
-                              <li className="flex justify-between">
-                                <span className="text-gray-500">Date:</span>
-                                <span>{formatDate(order.date)}</span>
-                              </li>
-                              <li className="flex justify-between">
-                                <span className="text-gray-500">Time:</span>
-                                <span>{formatTime(order.date)}</span>
-                              </li>
-                              <li className="flex justify-between">
-                                <span className="text-gray-500">Status:</span>
-                                <span
-                                  className={`font-medium ${
-                                    order.status.toLowerCase() === "completed"
-                                      ? "text-green-600"
-                                      : order.status.toLowerCase() ===
-                                        "cancelled"
-                                      ? "text-red-600"
-                                      : "text-blue-600"
-                                  }`}
-                                >
-                                  {order.status}
-                                </span>
-                              </li>
-                            </ul>
-                          </div>
-
-                          {/* Payment Info */}
-                          <div className="bg-white p-4 rounded-lg border border-gray-100 shadow-sm">
-                            <h3 className="font-semibold text-gray-800 mb-3 flex items-center">
-                              <FaCreditCard className="mr-2 text-gray-400" />
-                              Payment Details
-                            </h3>
-                            <ul className="space-y-2 text-sm">
-                              <li className="flex justify-between">
-                                <span className="text-gray-500">Method:</span>
-                                <span className="font-medium">
-                                  {order.paymentMethod}
-                                </span>
-                              </li>
-                              <li className="flex justify-between">
-                                <span className="text-gray-500">Subtotal:</span>
-                                <span>
-                                  {currency}
-                                  {(order.payment * 0.9).toFixed(2)}
-                                </span>
-                              </li>
-                              <li className="flex justify-between">
-                                <span className="text-gray-500">Tax:</span>
-                                <span>
-                                  {currency}
-                                  {(order.payment * 0.1).toFixed(2)}
-                                </span>
-                              </li>
-                              <li className="flex justify-between pt-2 border-t border-gray-100">
-                                <span className="text-gray-700 font-medium">
-                                  Total:
-                                </span>
-                                <span className="font-semibold">
-                                  {currency}
-                                  {order.payment?.toFixed(2)}
-                                </span>
-                              </li>
-                            </ul>
-                          </div>
-
-                          {/* Shipping Address */}
-                          <div className="bg-white p-4 rounded-lg border border-gray-100 shadow-sm">
-                            <h3 className="font-semibold text-gray-800 mb-3 flex items-center">
-                              <MdLocationOn className="mr-2 text-gray-400" />
-                              Shipping Address
-                            </h3>
-                            {order.address ? (
-                              <div className="text-sm">
-                                <p className="font-medium mb-1">
-                                  {order.address.name || "N/A"}
-                                </p>
-                                <p className="text-gray-600 mb-1">
-                                  {[order.address.street, order.address.city]
-                                    .filter(Boolean)
-                                    .join(", ")}
-                                </p>
-                                <p className="text-gray-600 mb-1">
-                                  {[order.address.state, order.address.zip]
-                                    .filter(Boolean)
-                                    .join(" ")}
-                                </p>
-                                <p className="text-gray-600 mt-2">
-                                  {order.address.phone || "No phone provided"}
-                                </p>
-                              </div>
-                            ) : (
-                              <p className="text-gray-500 text-sm">
-                                Address information not available
-                              </p>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Items */}
-                        <div className="mt-4">
-                          <h3 className="font-semibold text-gray-800 mb-3">
-                            Order Items
-                          </h3>
-                          <div className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden">
-                            <div className="divide-y divide-gray-100">
-                              {order.items.map((item, idx) => (
-                                <div
-                                  key={`${item._id}-${idx}`}
-                                  className="p-4 flex items-start gap-4"
-                                >
-                                  {/* Product image */}
-                                  <div className="w-16 h-16 bg-gray-100 rounded overflow-hidden flex-shrink-0">
-                                    {item.images && item.images.length > 0 ? (
-                                      <img
-                                        src={item.images[0]}
-                                        alt={item.name}
-                                        className="w-full h-full object-cover"
-                                      />
-                                    ) : (
-                                      <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                                        <span className="text-gray-400 text-xs">
-                                          No Image
-                                        </span>
-                                      </div>
-                                    )}
-                                  </div>
-
-                                  {/* Product details */}
-                                  <div className="flex-grow">
-                                    <h4 className="font-medium text-gray-800">
-                                      {item.name}
-                                    </h4>
-                                    <div className="mt-1 flex flex-wrap gap-x-4 text-sm text-gray-600">
-                                      <span>Qty: {item.quantity}</span>
-                                      {item.size && (
-                                        <span>Size: {item.size}</span>
-                                      )}
-                                      <span>
-                                        Price: {currency}
-                                        {item.price?.toFixed(2)}
-                                      </span>
-                                    </div>
-                                  </div>
-
-                                  {/* Item price & actions */}
-                                  <div className="flex flex-col items-end gap-2">
-                                    <span className="font-medium">
-                                      {currency}
-                                      {item.itemTotal?.toFixed(2)}
-                                    </span>
-                                    {order.status.toLowerCase() ===
-                                      "pending" && (
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleDelete(order.orderId, item._id);
-                                        }}
-                                        className="text-gray-400 hover:text-red-500 transition-colors p-1"
-                                      >
-                                        <FaTrashAlt size={14} />
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="mt-6 flex justify-end">
-                          {order.status.toLowerCase() === "pending" && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                cancelOrder(order.orderId);
-                              }}
-                              className="px-4 py-2 bg-red-500 text-white text-sm rounded-md hover:bg-red-600 transition-colors flex items-center"
-                            >
-                              <FaTimesCircle className="mr-2" /> Cancel Order
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
+                {item.status.toLowerCase() === 'pending' && (
+                  <button
+                    onClick={() => cancelOrder(item.orderId)}
+                    style={{
+                      padding: '6px 12px',
+                      backgroundColor: '#dc3545',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Cancel Order
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -3,11 +3,13 @@ import { assets } from "../assets/assets";
 import axios from "axios";
 import { backendUrl } from "../App";
 import { toast } from "react-toastify";
+import {useNavigate} from 'react-router-dom'
 
 const Login = ({ setToken }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const navigate = useNavigate()
   const onSubmitHandler = async (e) => {
     try {
       e.preventDefault();
@@ -62,7 +64,7 @@ localStorage.setItem("token", response.data.token);
           </div>
           <button
             className="w-full px-4 py-2 mt-5 text-white bg-black rounded-md"
-            type="submit"
+            onClick={() => navigate('/add')}
           >
             Login
           </button>

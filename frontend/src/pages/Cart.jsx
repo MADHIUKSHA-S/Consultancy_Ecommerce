@@ -455,22 +455,7 @@ const Cart = () => {
                 </p>
               </div>
 
-              <div className="mt-8 border-t border-gray-200 pt-4">
-                <h4 className="text-sm font-medium text-gray-900 mb-2">
-                  Secure Checkout
-                </h4>
-                <div className="flex items-center justify-center space-x-4">
-                  <div className="h-8 w-12 bg-gray-100 rounded flex items-center justify-center text-xs font-medium text-gray-500">
-                    Visa
-                  </div>
-                  <div className="h-8 w-12 bg-gray-100 rounded flex items-center justify-center text-xs font-medium text-gray-500">
-                    Master
-                  </div>
-                  <div className="h-8 w-12 bg-gray-100 rounded flex items-center justify-center text-xs font-medium text-gray-500">
-                    PayPal
-                  </div>
-                </div>
-              </div>
+
             </div>
           </div>
         </div>

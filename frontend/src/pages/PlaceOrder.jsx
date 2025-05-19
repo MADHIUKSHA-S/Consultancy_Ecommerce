@@ -17,6 +17,7 @@ import {
   FaCreditCard,
   FaMoneyBillWave,
   FaArrowLeft,
+  FaTag,
 } from "react-icons/fa";
 
 const PlaceOrder = () => {
@@ -51,14 +52,38 @@ const PlaceOrder = () => {
   // Get items to display in order summary
   const itemsToDisplay = cartData.filter((item) => selectedItems[item._id] > 0);
 
-  // Calculate totals
+  // Calculate totals with discount
   const subtotal = cartData.reduce((acc, item) => {
     const quantity = selectedItems[item._id] || 0;
     return acc + item.price * quantity;
   }, 0);
 
+  // Count total items
+  const totalItemCount = Object.values(selectedItems).reduce(
+    (sum, qty) => sum + (qty > 0 ? 1 : 0),
+    0
+  );
+
+  // Calculate discount based on item count
+  let discount = 0;
+  let discountPercentage = "0%";
+  if (totalItemCount >= 3 && totalItemCount < 5) {
+    // 10% discount for 3-4 items
+    discount = subtotal * 0.1;
+    discountPercentage = "10%";
+  } else if (totalItemCount >= 5 && totalItemCount < 7) {
+    // 15% discount for 5-6 items
+    discount = subtotal * 0.15;
+    discountPercentage = "15%";
+  } else if (totalItemCount >= 7) {
+    // 20% discount for 7+ items
+    discount = subtotal * 0.2;
+    discountPercentage = "20%";
+  }
+
+  const discountedSubtotal = subtotal - discount;
   const shipping = 10;
-  const totalAmount = subtotal + shipping;
+  const totalAmount = discountedSubtotal + shipping;
 
   useEffect(() => {
     const localToken = localStorage.getItem("token");
@@ -290,14 +315,31 @@ const PlaceOrder = () => {
           <span>Subtotal</span>
           <span>₹{subtotal.toFixed(2)}</span>
         </div>
+
+        {discount > 0 && (
+          <div className="flex justify-between text-green-600">
+            <span className="flex items-center">
+              <FaTag className="mr-1" /> Discount ({discountPercentage})
+            </span>
+            <span>-₹{discount.toFixed(2)}</span>
+          </div>
+        )}
+
         <div className="flex justify-between">
           <span>Shipping</span>
           <span>₹{shipping.toFixed(2)}</span>
         </div>
+
         <div className="flex justify-between font-semibold text-lg pt-3 border-t border-gray-200 text-gray-900">
           <span>Total</span>
           <span>₹{totalAmount.toFixed(2)}</span>
         </div>
+
+        {discount > 0 && (
+          <div className="mt-2 py-2 px-3 bg-green-50 border border-green-100 rounded-md text-xs text-green-700">
+            You saved ₹{discount.toFixed(2)} with our multi-item discount!
+          </div>
+        )}
       </div>
     </div>
   );

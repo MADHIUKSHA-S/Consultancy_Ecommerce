@@ -96,8 +96,7 @@ const OtpVerification = () => {
     setIsLoading(true);
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/user/send-otp`,
-        {
+        `${import.meta.env.VITE_BACKEND_URL}/api/user/send-otp`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -148,7 +147,7 @@ const OtpVerification = () => {
       const data = await response.json();
 
       if (response.ok) {
-        toast.success("Email verified successfully");
+        toast.success("Email verified successfully,please login");
 
         // Check if we have login data
         if (data.token) {
@@ -158,7 +157,7 @@ const OtpVerification = () => {
           setUserName(data.user.name || name);
         }
 
-        navigate("/");
+        navigate("/login");
       } else {
         toast.error(data.message || "Invalid OTP");
       }

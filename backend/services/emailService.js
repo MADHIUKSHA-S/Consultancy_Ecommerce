@@ -23,7 +23,7 @@ const transporter = nodemailer.createTransport({
 const sendVerificationEmail = async (to, name, otp) => {
   try {
     const mailOptions = {
-      from: `"Your App" <${process.env.EMAIL_FROM || "noreply@yourapp.com"}>`,
+      from: `"PBMS" <${process.env.EMAIL_FROM || "noreply@pbms.com"}>`,
       to,
       subject: "Email Verification OTP",
       html: `

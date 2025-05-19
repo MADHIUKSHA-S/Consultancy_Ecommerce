@@ -46,9 +46,9 @@ const CartTotal = ({ cartData, selectedItems }) => {
 
   // Calculate discount percentage for display
   const getDiscountPercentage = () => {
-    if (totalItems >= 7) return "20%";
-    if (totalItems >= 5) return "15%";
-    if (totalItems >= 3) return "10%";
+    if (totalItems >= 7) return "10%";
+    if (totalItems >= 5) return "7%";
+    if (totalItems >= 3) return "5%";
     return "0%";
   };
 
@@ -109,13 +109,13 @@ const CartTotal = ({ cartData, selectedItems }) => {
                 {totalItems < 5 && (
                   <p className="text-xs mt-1">
                     Add {5 - totalItems} more item
-                    {5 - totalItems !== 1 ? "s" : ""} to get 15% off
+                    {5 - totalItems !== 1 ? "s" : ""} to get 7% off
                   </p>
                 )}
                 {totalItems >= 5 && totalItems < 7 && (
                   <p className="text-xs mt-1">
                     Add {7 - totalItems} more item
-                    {7 - totalItems !== 1 ? "s" : ""} to get 20% off
+                    {7 - totalItems !== 1 ? "s" : ""} to get 10% off
                   </p>
                 )}
               </div>
@@ -124,7 +124,7 @@ const CartTotal = ({ cartData, selectedItems }) => {
             <div className="text-gray-500 text-xs">
               <p>
                 Add {3 - totalItems} more item{3 - totalItems !== 1 ? "s" : ""}{" "}
-                to get 10% discount
+                to get 5% discount
               </p>
             </div>
           )}

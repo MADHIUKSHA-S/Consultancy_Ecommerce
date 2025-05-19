@@ -203,12 +203,13 @@ const forgotPasswordRequest = async (req, res) => {
       from: process.env.EMAIL_USER,
       to: email,
       subject: "Password Reset Request",
-      html: `
-        <h1>Password Reset Request</h1>
-        <p>Click the link below to reset your password:</p>
-        <a href="${resetUrl}">Reset Password</a>
-        <p>This link will expire in 1 hour.</p>
-      `,
+     // Change this in your backend code
+html: `
+  <h1>Password Reset Request</h1>
+  <p>Click the link below to reset your password:</p>
+  <a href="${resetUrl}" onclick="window.open('${resetUrl}', '_self'); return false;">Reset Password</a>
+  <p>This link will expire in 1 hour.</p>
+`,
     });
 
     res.json({ message: "Password reset link sent to email" });
@@ -252,7 +253,7 @@ const resetPassword = async (req, res) => {
     user.resetPasswordExpires = undefined;
     await user.save();
 
-    res.json({ success: true, message: "Password has been reset successfully" });
+    res.json({ success: true, message: "Password has been reset successfully, please login" });
   } catch (error) {
     console.error("Reset password error:", error);
     if (error.name === 'TokenExpiredError' || error.name === 'JsonWebTokenError') {

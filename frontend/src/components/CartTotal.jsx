@@ -26,13 +26,13 @@ const CartTotal = ({ cartData, selectedItems }) => {
       let discountAmount = 0;
       if (itemCount >= 3 && itemCount < 5) {
         // 10% discount for 3-4 items
-        discountAmount = total * 0.1;
+        discountAmount = total * 0.05;
       } else if (itemCount >= 5 && itemCount < 7) {
         // 15% discount for 5-6 items
-        discountAmount = total * 0.15;
+        discountAmount = total * 0.07;
       } else if (itemCount >= 7) {
         // 20% discount for 7+ items
-        discountAmount = total * 0.2;
+        discountAmount = total * 0.1;
       }
 
       setDiscount(discountAmount);

@@ -179,7 +179,7 @@ const Login = () => {
         });
         
         // After successful signup, redirect to login page
-        toast.success('Account created successfully! Please login.');
+       
         setCurrentState("Login"); // Switch to login form
         setName("");
         setEmail("");

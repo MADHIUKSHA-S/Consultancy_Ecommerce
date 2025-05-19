@@ -1,11 +1,13 @@
-import express from 'express';
-import Order from '../models/orderModel.js';
-import authMiddleware from '../middleware/authMiddleware.js';
-import adminAuth from '../middleware/adminAuth.js';
+import express from "express";
+import Order from "../models/orderModel.js";
+import authMiddleware from "../middleware/authMiddleware.js";
+import adminAuth from "../middleware/adminAuth.js";
+import { sendCancellationEmail } from "../services/emailService.js"; // Add this import
+import User from "../models/userModel.js"; // Add this to fetch user details
 const router = express.Router();
-import Razorpay from 'razorpay';
-import crypto from 'crypto';
-import dotenv from 'dotenv';
+import Razorpay from "razorpay";
+import crypto from "crypto";
+import dotenv from "dotenv";
 dotenv.config();
 
 // Razorpay instance initialization
@@ -14,64 +16,82 @@ const razorpayInstance = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-console.log('Razorpay Keys:', process.env.RAZORPAY_KEY_ID, process.env.RAZORPAY_KEY_SECRET);
+console.log(
+  "Razorpay Keys:",
+  process.env.RAZORPAY_KEY_ID,
+  process.env.RAZORPAY_KEY_SECRET
+);
 
 // POST /api/order/payment-success — Handle Razorpay payment success
-router.post('/payment-success', async (req, res) => {
+router.post("/payment-success", async (req, res) => {
   try {
     const { orderId, paymentDetails } = req.body;
     const order = await Order.findById(orderId);
-    
+
     if (!order) {
-      return res.status(404).json({ success: false, message: 'Order not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Order not found" });
     }
 
-    const generatedSignature = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-      .update(`${paymentDetails.razorpay_order_id}|${paymentDetails.razorpay_payment_id}`)
-      .digest('hex');
+    const generatedSignature = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .update(
+        `${paymentDetails.razorpay_order_id}|${paymentDetails.razorpay_payment_id}`
+      )
+      .digest("hex");
 
     if (generatedSignature === paymentDetails.razorpay_signature) {
-      order.status = 'Paid';
+      order.status = "Paid";
       await order.save();
 
-      return res.status(200).json({ success: true, message: 'Payment verified and order updated.' });
+      return res.status(200).json({
+        success: true,
+        message: "Payment verified and order updated.",
+      });
     }
 
-    return res.status(400).json({ success: false, message: 'Payment verification failed' });
+    return res
+      .status(400)
+      .json({ success: false, message: "Payment verification failed" });
   } catch (error) {
-    console.error('Payment success error:', error);
-    res.status(500).json({ success: false, message: 'Failed to verify payment', error: error.message });
+    console.error("Payment success error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to verify payment",
+      error: error.message,
+    });
   }
 });
 
 // GET /api/order/userOrders
 
 // GET /api/order/userOrders
-router.get('/userOrders', authMiddleware, async (req, res) => {
+router.get("/userOrders", authMiddleware, async (req, res) => {
   try {
-    console.log('Authenticated User ID:', req.user.id); // Debug
-    
+    console.log("Authenticated User ID:", req.user.id); // Debug
+
     const orders = await Order.find({ userId: req.user.id })
       .populate({
-        path: 'items.productId',
-        select: 'name price images description' // Only include necessary fields
+        path: "items.productId",
+        select: "name price images description", // Only include necessary fields
       })
       .sort({ createdAt: -1 });
 
     if (!orders.length) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        message: "No orders found"
+        message: "No orders found",
       });
     }
 
     res.status(200).json(orders);
   } catch (error) {
-    console.error('Order fetch error:', error);
-    res.status(500).json({ 
+    console.error("Order fetch error:", error);
+    res.status(500).json({
       success: false,
       message: "Server error",
-      error: error.message 
+      error: error.message,
     });
   }
 });
@@ -79,18 +99,17 @@ router.get('/userOrders', authMiddleware, async (req, res) => {
 router.get("/all-orders", adminAuth, async (req, res) => {
   try {
     const orders = await Order.find({})
-    .populate({
-      path: 'userId',
-      select: 'email createdAt' // To show user info
-    })
-    .populate({
-      path: 'items.productId',
-      select: 'name price images'
-    })
-    .sort({ createdAt: -1 });
-  
-  res.json({ success: true, orders });
-  
+      .populate({
+        path: "userId",
+        select: "email createdAt", // To show user info
+      })
+      .populate({
+        path: "items.productId",
+        select: "name price images",
+      })
+      .sort({ createdAt: -1 });
+
+    res.json({ success: true, orders });
   } catch (error) {
     console.error("Admin Order fetch error:", error);
     res.status(500).json({ message: "Failed to fetch admin orders" });
@@ -98,27 +117,27 @@ router.get("/all-orders", adminAuth, async (req, res) => {
 });
 
 // POST /api/order/place — Place a new order
-router.post('/place', authMiddleware, async (req, res) => {
+router.post("/place", authMiddleware, async (req, res) => {
   try {
     const { items, amount, address, paymentMethod } = req.body;
     const userId = req.user.id;
-console.log(amount);
+    console.log(amount);
     const order = new Order({
       userId,
       items,
       amount,
       address,
       paymentMethod,
-      status: 'Pending',
+      status: "Pending",
     });
 
     await order.save();
 
-    if (paymentMethod === 'razorpay') {
+    if (paymentMethod === "razorpay") {
       try {
         const razorpayOrder = await razorpayInstance.orders.create({
           amount: amount * 100, // in paise
-          currency: 'INR',
+          currency: "INR",
           receipt: `order_${order._id}`,
           payment_capture: 1,
         });
@@ -128,92 +147,171 @@ console.log(amount);
 
         return res.status(200).json({
           success: true,
-          message: 'Order placed successfully!',
+          message: "Order placed successfully!",
           order: {
             _id: order._id,
-            amount:amount,
+            amount: amount,
             razorpayOrderId: razorpayOrder.id,
           },
         });
       } catch (razorpayError) {
-        console.error('Razorpay order creation error:', razorpayError);
+        console.error("Razorpay order creation error:", razorpayError);
         return res.status(500).json({
           success: false,
-          message: 'Failed to create Razorpay order',
+          message: "Failed to create Razorpay order",
           error: razorpayError.message,
         });
       }
     }
 
-    res.status(200).json({ success: true, message: 'Order placed successfully!' });
+    res
+      .status(200)
+      .json({ success: true, message: "Order placed successfully!" });
   } catch (error) {
-    console.error('Order placement error:', error);
-    res.status(500).json({ success: false, message: 'Failed to place order', error: error.message });
+    console.error("Order placement error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to place order",
+      error: error.message,
+    });
   }
 });
 
-
-// Example Express route
-router.put('/cancel/:orderId', authMiddleware, async (req, res) => {
+// Modified cancel order route with email notification
+router.put("/cancel/:orderId", authMiddleware, async (req, res) => {
   try {
     const order = await Order.findById(req.params.orderId);
-    if (!order) return res.status(404).json({ message: 'Order not found' });
+    if (!order) return res.status(404).json({ message: "Order not found" });
 
-    if (order.status !== 'Pending') {
-      return res.status(400).json({ message: 'Only pending orders can be cancelled' });
+    if (order.status !== "Pending") {
+      return res
+        .status(400)
+        .json({ message: "Only pending orders can be cancelled" });
     }
 
-    order.status = 'cancelled';
+    // Get user information for the email
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Update order status
+    order.status = "Cancelled";
     await order.save();
 
-    res.json({ message: 'Order cancelled successfully' });
+    // Format the order details for the email
+    const orderDetails = {
+      id: order._id,
+      date: new Date(order.createdAt).toLocaleDateString(),
+      amount: order.amount,
+      items: order.items.length,
+    };
+
+    // Send cancellation email
+    const emailSent = await sendCancellationEmail(
+      user.email,
+      user.name,
+      orderDetails
+    );
+
+    if (emailSent) {
+      res.json({
+        message: "Order cancelled successfully",
+        emailSent: true,
+      });
+    } else {
+      res.json({
+        message:
+          "Order cancelled successfully, but failed to send email notification",
+        emailSent: false,
+      });
+    }
   } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    console.error("Order cancellation error:", err);
+    res.status(500).json({ message: "Server error" });
   }
 });
+
 // adjust path as needed
 
 // DELETE /api/order/item/:orderId/:productId
-router.delete('/item/:orderId/:productId', authMiddleware, async (req, res) => {
+router.delete("/item/:orderId/:productId", authMiddleware, async (req, res) => {
   const { orderId, productId } = req.params;
 
   try {
     const order = await Order.findById(orderId);
-    if (!order) return res.status(404).json({ message: 'Order not found' });
+    if (!order) return res.status(404).json({ message: "Order not found" });
 
     // Filter out the item
-    order.items = order.items.filter(item => item.productId.toString() !== productId);
-    
+    order.items = order.items.filter(
+      (item) => item.productId.toString() !== productId
+    );
+
     // If all items are deleted, you can optionally delete the whole order
     if (order.items.length === 0) {
       await Order.findByIdAndDelete(orderId);
-      return res.json({ message: 'Item deleted. Order was empty and removed.' });
+      return res.json({
+        message: "Item deleted. Order was empty and removed.",
+      });
     }
 
     await order.save();
-    res.json({ message: 'Order item deleted successfully' });
+    res.json({ message: "Order item deleted successfully" });
   } catch (error) {
-    console.error('Error deleting item:', error);
-    res.status(500).json({ message: 'Failed to delete item' });
+    console.error("Error deleting item:", error);
+    res.status(500).json({ message: "Failed to delete item" });
   }
 });
 
-
-router.put('/update-status', adminAuth, async (req, res) => {
+// Update the admin order status update route
+router.put("/update-status", adminAuth, async (req, res) => {
   const { orderId, status } = req.body;
 
   try {
     const order = await Order.findById(orderId);
     if (!order) {
-      return res.status(404).json({ success: false, message: 'Order not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Order not found" });
     }
 
+    const previousStatus = order.status;
     order.status = status; // Update status (Pending, Shipped, Delivered)
     await order.save();
 
-    res.json({ success: true, message: 'Order status updated' });
+    // If the admin is cancelling the order, send an email to the user
+    if (
+      status.toLowerCase() === "cancelled" &&
+      previousStatus.toLowerCase() !== "cancelled"
+    ) {
+      try {
+        // Get the user information
+        const user = await User.findById(order.userId);
+        if (user) {
+          // Format the order details for the email
+          const orderDetails = {
+            id: order._id,
+            date: new Date(order.createdAt).toLocaleDateString(),
+            amount: order.amount,
+            items: order.items.length,
+          };
+
+          // Send cancellation email
+          await sendCancellationEmail(user.email, user.name, orderDetails);
+        }
+      } catch (emailError) {
+        console.error("Failed to send cancellation email:", emailError);
+        // Continue with the response even if email fails
+      }
+    }
+
+    res.json({ success: true, message: "Order status updated" });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Error updating order status' });
+    console.error("Status update error:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Error updating order status" });
   }
 });
+
 export default router;

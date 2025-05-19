@@ -170,9 +170,7 @@ const ShopContextProvider = (props) => {
         setCartItems(response.data.cartData || {}); // <-- Fix here
         localStorage.setItem("cartItems", JSON.stringify(response.data.cartData || {})); // <-- Fix here
       }
-    } catch (error) {
-      toast.error("Failed to fetch updated cart");
-    }
+    } 
   };
   useEffect(() => {
     if (token) {

@@ -147,7 +147,7 @@ const OtpVerification = () => {
       const data = await response.json();
 
       if (response.ok) {
-        toast.success("Email verified successfully");
+        toast.success("Email verified successfully,please login");
 
         // Check if we have login data
         if (data.token) {

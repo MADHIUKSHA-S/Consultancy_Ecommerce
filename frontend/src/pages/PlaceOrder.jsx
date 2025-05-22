@@ -176,11 +176,12 @@ const PlaceOrder = () => {
     const orderData = {
       userId,
       address: {
-        name: `${formData.firstName} ${formData.lastName}`,
+         firstName: formData.firstName,
+      lastName: formData.lastName,
         street: formData.street,
         city: formData.city,
         state: formData.state,
-        zip: formData.zipcode,
+        zipcode: formData.zipcode,
         country: formData.country,
         phone: formData.phone,
         email: formData.email,
@@ -203,7 +204,7 @@ const PlaceOrder = () => {
         const { razorpayOrderId, amount } = response.data.order;
 
         const options = {
-          key: razorkey,
+          key: import.meta.env.RAZORPAY_KEY_ID,
           amount: amount * 100,
           currency: "INR",
           order_id: razorpayOrderId,

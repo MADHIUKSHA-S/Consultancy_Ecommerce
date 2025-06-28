@@ -55,10 +55,10 @@ Create a .env file with:
 - EMAIL_PASS
 - FRONTEND_URL
 
-#### //admin env
+#### admin env
 - VITE_BACKEND_URL
 
-###frontend env
+#### frontend env
 - VITE_RAZORPAY_KEY_ID
 - VITE_BACKEND_URL
 
